@@ -1,4 +1,6 @@
 using FlowerBot;
+using FlowerBot.Services;
+using FlowerBot.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 
@@ -18,6 +20,7 @@ builder.Services.AddSingleton<ITelegramBotClient>(
         var settings = x.GetRequiredService<TelegramBotOptions>();
         return new TelegramBotClient(settings.Token);
     });
+builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
 
 var app = builder.Build();
 app.UseTelegramBotWebhook();

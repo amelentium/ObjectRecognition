@@ -1,5 +1,5 @@
+using FlowerBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace FlowerBot.Controllers
@@ -9,23 +9,25 @@ namespace FlowerBot.Controllers
 	public class TelegramBotController : ControllerBase
 	{
 		private readonly ILogger<TelegramBotController> _logger;
-		private readonly ITelegramBotClient _telegramBot;
+		private readonly ITelegramBotService _telegramBotService;
 
 		public TelegramBotController(
 			ILogger<TelegramBotController> logger,
-			ITelegramBotClient telegramBot)
+			ITelegramBotService telegramBotService)
 		{
 			_logger = logger;
-			_telegramBot = telegramBot;
+			_telegramBotService = telegramBotService;
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> TelegramWebhook([FromBody] Update update)
+		public IActionResult TelegramWebhook([FromBody] Update update)
         {
-            if (update != null)
-				await _telegramBot.SendTextMessageAsync(update.Message.Chat.Id, update.Message.Text);
+			if (update != null)
+			{
+				_ = _telegramBotService.MakePredictAsync(update);
+			}
 
-            return Ok();
+			return Ok();
         }
     }
 }
