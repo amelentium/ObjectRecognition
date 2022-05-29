@@ -64,8 +64,8 @@ namespace FlowerBot.Services
 				WorkingDirectory = $"{_env.ContentRootPath}Scripts",
 				FileName = "image_predict.py",
 				Arguments = imageId,
-				CreateNoWindow = false,
-				UseShellExecute = true
+				CreateNoWindow = true,
+				UseShellExecute = false
 			});
 
 			await cmdProcess.WaitForExitAsync();

@@ -7,7 +7,7 @@ import model as core
 
 #Image preparation
 imageName = sys.argv[1]
-image = Image.open(f'..Images/user_images/{imageName}.jpg')
+image = Image.open(f'../Images/user_images/{imageName}.jpg')
 image = TF.resize(image, 256)
 
 upper_pixel = (image.height - 224) // 2
@@ -46,6 +46,6 @@ ax2.set_title('Class Probability')
 for i in range(1, 6):
     ax2.text(0.4234, (i-1 + i*0.1 - (i-1)*0.1), f'{probs[i-1]:.4f}')
 
-plt.savefig(f'..Images/user_images/{imageName}_result.jpg', bbox_inches='tight')
+plt.savefig(f'../Images/user_images/{imageName}_result.jpg', bbox_inches='tight')
 plt.close()
 exit()

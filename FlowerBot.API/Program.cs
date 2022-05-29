@@ -23,7 +23,9 @@ builder.Services.AddSingleton<ITelegramBotClient>(
 builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
 
 var app = builder.Build();
+
 app.UseTelegramBotWebhook();
+
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
