@@ -195,10 +195,8 @@
         {
             Files.Add(new FileObject()
             {
-                FileName = 
-                Path.GetFileName(item),
-                FilePath = 
-                item.Replace(HostEnvironment.WebRootPath, "")
+                FileName = Path.GetFileName(item),
+                FilePath = item.Replace(HostEnvironment.WebRootPath, "")
             });
         }
 

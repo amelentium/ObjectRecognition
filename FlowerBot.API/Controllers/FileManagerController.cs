@@ -1,20 +1,29 @@
-using FlowerBot.Services.Interfaces;
+using FlowerBot.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Telegram.Bot.Types;
 
 namespace FlowerBot.Controllers
 {
-	[ApiController]
+    [ApiController]
 	[Route("api/file-manager")]
 	public class FileManagerController : ControllerBase
 	{
 		private readonly ILogger<FileManagerController> _logger;
+        private readonly IFileManagerService _fileManagerService;
 
-		public FileManagerController(
-			ILogger<FileManagerController> logger
+        public FileManagerController(
+			ILogger<FileManagerController> logger,
+			IFileManagerService fileManagerService
 			)
 		{
 			_logger = logger;
-		}
+            _fileManagerService = fileManagerService;
+        }
+
+        [HttpPost("model/train")]
+		public IActionResult RunTraining()
+        {
+			_ = _fileManagerService.ExecuteTrainScript();
+			return Ok();
+        }
     }
 }
