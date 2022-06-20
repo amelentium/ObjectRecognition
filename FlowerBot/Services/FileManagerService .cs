@@ -1,4 +1,4 @@
-﻿using FlowerBot.API.Services.Interfaces;
+﻿using FlowerBot.Services.Interfaces;
 using System.Diagnostics;
 
 namespace FlowerBot.Services

@@ -1,7 +1,7 @@
-﻿namespace FlowerBot.API.Services.Interfaces
+﻿namespace FlowerBot.Services.Interfaces
 {
-    public interface IFileManagerService
-    {
-        Task ExecuteTrainScript();
-    }
+	public interface IFileManagerService
+	{
+		Task ExecuteTrainScript();
+	}
 }

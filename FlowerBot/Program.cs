@@ -25,6 +25,8 @@ builder.Services.AddScoped<IFileManagerService, FileManagerService>();
 
 var app = builder.Build();
 
+app.UseTelegramBotWebhook();
+
 if (!app.Environment.IsDevelopment())
 {
 	app.UseExceptionHandler("/Error");

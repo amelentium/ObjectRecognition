@@ -39,6 +39,6 @@
 
     private async void RunTraining() {
         var httpClient = new HttpClient();
-        await httpClient.PostAsync("http://localhost:40300/api/file-manager/model/train", null);
+        await httpClient.PostAsync("https://localhost:7065/api/file-manager/model/train", null);
     }
 }
