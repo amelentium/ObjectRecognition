@@ -44,7 +44,7 @@ namespace FlowerBot.Services
 		private async Task SaveUserImageAsync(string imageId)
 		{
 			var rootPath = _env.ContentRootPath;
-			var imagePath = $"{rootPath}wwwroot\\Images\\user_images\\{imageId}.jpg";
+			var imagePath = $"{rootPath}Images\\user_images\\{imageId}.jpg";
 			using (var imageStream = System.IO.File.OpenWrite(imagePath))
 			{
 				try
@@ -74,15 +74,15 @@ namespace FlowerBot.Services
 
 		private async Task SendPredictResult(long chatId, string imageId)
 		{
-			await using Stream stream = System.IO.File.OpenRead($"{_env.ContentRootPath}wwwroot\\Images\\user_images\\{imageId}_result.jpg");
+			await using Stream stream = System.IO.File.OpenRead($"{_env.ContentRootPath}Images\\user_images\\{imageId}_result.jpg");
 
 			await _telegramBot.SendPhotoAsync(chatId, new InputOnlineFile(content: stream, fileName: "predict_result.jpg"));
 		}
 
 		private void ClearUserImages(string imageId)
         {
-            System.IO.File.Delete($"{_env.ContentRootPath}wwwroot\\Images\\user_images\\{imageId}.jpg");
-			System.IO.File.Delete($"{_env.ContentRootPath}wwwroot\\Images\\user_images\\{imageId}_result.jpg");
+            System.IO.File.Delete($"{_env.ContentRootPath}Images\\user_images\\{imageId}.jpg");
+			System.IO.File.Delete($"{_env.ContentRootPath}Images\\user_images\\{imageId}_result.jpg");
         }
 	}
 }

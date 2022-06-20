@@ -1,4 +1,5 @@
 using FlowerBot;
+using FlowerBot.API.Services.Interfaces;
 using FlowerBot.Services;
 using FlowerBot.Services.Interfaces;
 using Microsoft.Extensions.Options;
@@ -7,10 +8,10 @@ using Telegram.Bot;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<TelegramBotOptions>(configuration.GetSection("TelegramBotOptions"));
 builder.Services.AddTransient(ser => ser.GetService<IOptions<TelegramBotOptions>>().Value);
@@ -27,20 +28,16 @@ var app = builder.Build();
 
 app.UseTelegramBotWebhook();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-	app.UseExceptionHandler("/Error");
-	app.UseHsts();
+	app.UseSwagger();
+	app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.UseAuthorization();
 
-app.UseRouting();
-
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 app.MapControllers();
 
 app.Run();
