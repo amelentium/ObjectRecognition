@@ -22,7 +22,7 @@ namespace FlowerBot.Controllers
 		[HttpPost]
 		public IActionResult TelegramWebhook([FromBody] Update update)
         {
-			if (update != null)
+			if (!string.IsNullOrEmpty(update.Message?.Photo?.Last()?.FileId))
 			{
 				_ = _telegramBotService.MakePredictAsync(update);
 			}
