@@ -1,0 +1,31 @@
+﻿@page "/species"
+@inject IJSRuntime JS
+
+<PageTitle>Species</PageTitle>
+<h3>Species Uploader</h3>
+<br />
+<form enctype="multipart/form-data" method="post" action="/api/file-manager/species">
+    <div class="form-group">
+        <label for="Name">Name</label>
+        <input id="Name" name="Name" class="form-control" type="text"  placeholder="Flower name" style="max-width:250px"/>
+    </div>
+    <div class="form-group">
+        <label for="TrainImages">Images</label>
+        <input id="TrainImages" name="TrainImages" class="form-control-file" accept="image/png, image/jpeg, image/jpg" type="file" multiple/>
+    </div>
+    <div id="TrainImagesPreview" class="form-group">
+    </div>
+    <div>
+        <input class="btn btn-primary" type="submit" value="Upload" />
+    </div>
+</form>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/SpeciesUploader.razor.js");
+        }
+    }
+}

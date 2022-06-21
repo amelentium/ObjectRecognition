@@ -1,17 +1,17 @@
-﻿@page "/filemanager"
+﻿@page "/files"
 @using System.IO
 @using System.Web;
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.AspNetCore.Identity;
 @using System.Collections;
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
-@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<h3>Image File Manager</h3>
+<PageTitle>Files</PageTitle>
+<h3>File Manager</h3>
 <div>
     <RadzenUpload ChooseText="Upload Files" Multiple="true"
         Accept="image/*"
-        Url=@($"/api/file-manager/multiple?CurrentDirectory={HttpUtility.UrlEncode(CurrentDirectory)}")
+        Url=@($"/api/file-manager/upload?CurrentDirectory={HttpUtility.UrlEncode(CurrentDirectory)}")
         Style="margin-bottom: 20px;height: 45px"
         Progress="@((args) => OnProgress(args))" />
 
@@ -35,7 +35,7 @@
     <div class="col-md-4" style="margin-bottom: 16px">
         <RadzenTree Change="@LogChange" Data="@Directories"
                     Expand="@LoadDirectory"
-                    Style="width: 100%; height: 300px">
+                    Style="width: 100%; height: 250px">
             <RadzenTreeLevel Text="@GetTextForNode"
                                 Template="@FileOrFolderTemplate" />
         </RadzenTree>
@@ -47,7 +47,7 @@
                 @if (file.FileName == SelectedFile.FileName)
                 {
                     <RadzenImage Path="@file.FilePath"
-                                    Style="width:100px; 
+                                    Style="width:150px; 
                                         padding:10px; 
                                         background-color:darkgrey"
                                     Click="@((args) => SelectImage(file))" />
@@ -55,7 +55,7 @@
                 else
                 {
                     <RadzenImage Path="@file.FilePath"
-                                    Style="width: 100px; 
+                                    Style="width: 150px; 
                                         padding: 10px; 
                                         background-color: white"
                                     Click="@((args) => SelectImage(file))" />
@@ -195,10 +195,10 @@
             foreach (var item in FileNames)
             {
                 Files.Add(new FileObject()
-            {
-                FileName = Path.GetFileName(item),
-                FilePath = item.Replace(HostEnvironment.WebRootPath, "")
-            });
+                {
+                    FileName = Path.GetFileName(item),
+                    FilePath = item.Replace(HostEnvironment.WebRootPath, "")
+                });
             }
 
             SelectedFile = new FileObject();

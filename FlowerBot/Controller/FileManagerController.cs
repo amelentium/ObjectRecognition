@@ -1,35 +1,36 @@
+using FlowerBot.Data;
 using FlowerBot.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FlowerBot.Controllers
 {
-	[ApiController]
-	[Route("api/file-manager")]
-	public class FileManagerController : ControllerBase
-	{
+    [ApiController]
+    [Route("api/file-manager")]
+    public class FileManagerController : ControllerBase
+    {
         private readonly IWebHostEnvironment _environment;
-		private readonly ILogger<FileManagerController> _logger;
+        private readonly ILogger<FileManagerController> _logger;
         private readonly IFileManagerService _fileManagerService;
 
         public FileManagerController(
-			ILogger<FileManagerController> logger,
-			IFileManagerService fileManagerService,
-			IWebHostEnvironment environment)
-		{
-			_logger = logger;
-			_fileManagerService = fileManagerService;
-			_environment = environment;
-		}
-
-		[HttpPost("model/train")]
-		public IActionResult RunTraining()
+            ILogger<FileManagerController> logger,
+            IFileManagerService fileManagerService,
+            IWebHostEnvironment environment)
         {
-			_ = _fileManagerService.ExecuteTrainScript();
-			return Ok();
+            _logger = logger;
+            _fileManagerService = fileManagerService;
+            _environment = environment;
         }
 
-        [HttpPost("[action]")]
-        public async Task<IActionResult> MultipleAsync(IFormFile[] files, [FromQuery] string CurrentDirectory)
+        [HttpPost("model/train")]
+        public IActionResult RunTraining()
+        {
+            _ = _fileManagerService.ExecuteTrainScript();
+            return Ok();
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadFilesAsync(IFormFile[] files, [FromQuery] string CurrentDirectory)
         {
             try
             {
@@ -62,6 +63,22 @@ namespace FlowerBot.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpPost("species")]
+        public async Task<IActionResult> AddFlowerSpecie([FromForm] SpecieUpload specie)
+        {
+            await _fileManagerService.AddSpecie(specie);
+
+            return Ok();
+        }
+
+        [HttpDelete("species/{name}")]
+        public async Task<IActionResult> RemoveFlowerSpecie(string name)
+        {
+            await _fileManagerService.RemoveSpecie(name);
+
+            return Ok();
         }
     }
 }
