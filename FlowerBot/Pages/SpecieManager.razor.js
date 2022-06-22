@@ -1,5 +1,5 @@
 ﻿function previewImages() {
-    var preview = document.querySelector('#TrainImagesPreview');
+    var preview = document.querySelector('#ImagesPreview');
 
     preview.innerHTML = ''
 
@@ -24,4 +24,4 @@
         reader.readAsDataURL(file)
     }
 }
-document.querySelector('#TrainImages').addEventListener('change', previewImages)
+document.querySelector('#Images').addEventListener('change', previewImages)

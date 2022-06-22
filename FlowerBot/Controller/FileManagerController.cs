@@ -74,9 +74,9 @@ namespace FlowerBot.Controllers
         }
 
         [HttpDelete("species/{name}")]
-        public async Task<IActionResult> RemoveFlowerSpecie(string name)
+        public IActionResult RemoveFlowerSpecie(string name)
         {
-            await _fileManagerService.RemoveSpecie(name);
+            _fileManagerService.RemoveSpecie(name);
 
             return Ok();
         }

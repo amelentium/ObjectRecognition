@@ -17,6 +17,7 @@ namespace FlowerBot.Services
 			ILogger<FileManagerService> logger,
 			IWebHostEnvironment env)
 		{
+			_speciesContext = speciesContext;
 			_logger = logger;
 			_env = env;
 		}
@@ -26,13 +27,17 @@ namespace FlowerBot.Services
 			if (_speciesContext.IsExistSpecie(specie.Name))
 				throw new SpeciesException("Specie with same name already exist");
 
-			var specieId = _speciesContext.AddSpecie(specie.Name);
+			var specieId = await _speciesContext.AddSpecie(specie.Name);
 			var imgCount = 0;
+
+			Directory.CreateDirectory(string.Format(ImagePath, "train", specieId));
+			Directory.CreateDirectory(string.Format(ImagePath, "valid", specieId));
 
 			foreach (var image in specie.Images)
 			{
 				var imgType = (++imgCount % 4 == 0) ? "valid" : "train";
-				var imagePath = string.Format(ImagePath, imgType, specieId);
+				var imageName = $"{specieId}/{imgCount}{image.FileName.Substring(image.FileName.LastIndexOf('.'))}";
+				var imagePath = string.Format(ImagePath, imgType, imageName);
 
 				using (var stream = File.Create(imagePath))
 				{

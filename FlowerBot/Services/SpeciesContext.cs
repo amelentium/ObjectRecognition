@@ -38,7 +38,8 @@ namespace FlowerBot.Services
 
 		public async Task<string> AddSpecie(string name)
 		{
-			if (_species.ContainsValue(name.ToLower()))
+			name = name.Trim().ToLower();
+			if (_species.ContainsValue(name))
 				throw new SpeciesException("Specie with same name already exist");
 
 			var id = (int.Parse(_species.Last().Key) + 1).ToString();
@@ -50,7 +51,8 @@ namespace FlowerBot.Services
 
 		public async Task RemoveSpecie(string name)
 		{
-			var specie = _species.FirstOrDefault(x => x.Value == name.ToLower());
+			name = name.Trim().ToLower();
+			var specie = _species.FirstOrDefault(x => x.Value == name);
 			if (int.Parse(specie.Key) == 0)
 				throw new SpeciesException("Specie with same name does not exist");
 
@@ -60,7 +62,7 @@ namespace FlowerBot.Services
 
 		public bool IsExistSpecie(string name)
 		{
-			return _species.ContainsValue(name.ToLower());
+			return _species.ContainsValue(name.Trim().ToLower());
 		}
 
 		private static void Save()

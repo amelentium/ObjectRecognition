@@ -22,6 +22,7 @@ builder.Services.AddSingleton<ITelegramBotClient>(
     });
 builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();
+builder.Services.AddScoped<ISpeciesContext, SpeciesContext>();
 
 var app = builder.Build();
 

@@ -4,21 +4,30 @@
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.AspNetCore.Identity;
 @using System.Collections;
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
+@inject IWebHostEnvironment HostEnvironment
+@inject ISpeciesContext SpeciesContext
 
 <PageTitle>Files</PageTitle>
 <h3>File Manager</h3>
+<style type="text/css">
+    .rz-fileupload-buttonbar {
+    position: relative;
+    background-color: #f3f5f7 !important;
+    padding: 0rem;
+    border-radius: 4px;
+}
+</style>
 <div>
     <RadzenUpload ChooseText="Upload Files" Multiple="true"
-        Accept="image/*"
+        Accept="image/png, image/jpeg, image/jpg"
         Url=@($"/api/file-manager/upload?CurrentDirectory={HttpUtility.UrlEncode(CurrentDirectory)}")
-        Style="margin-bottom: 20px;height: 45px"
+        Style="margin-bottom: 20px; height: 45px"
         Progress="@((args) => OnProgress(args))" />
 
     <RadzenSplitButton Click="(args) => FolderAction(args)"
         Text="Folder"
         ButtonStyle="ButtonStyle.Info"
-        Style="margin-bottom: 20px;height: 35px">
+        Style="margin-bottom: 20px; height: 35px">
         <ChildContent>
             <RadzenSplitButtonItem Text="Add Folder" Value="Add" />
             <RadzenSplitButtonItem Text="Delete Folder" Value="Delete" />
@@ -29,7 +38,7 @@
         Text="Delete File"
         Click="DeleteSelectedFile"
         ButtonStyle="ButtonStyle.Danger"
-        Style="margin-bottom: 20px;height: 35px" />
+        Style="margin-bottom: 20px; height: 35px" />
 </div>
 <div class="row">
     <div class="col-md-4" style="margin-bottom: 16px">
@@ -97,14 +106,14 @@
                         <span aria-hidden="true">X</span>
                     </button>
                 </div>
-                <div align="center">
+                <div align="center" style="padding-top: 20px">
                     <RadzenTextBox Placeholder="Folder Name"
                                     @bind-Value="NewFolderName"
                                     Style="margin-bottom: 20px" />
                     <RadzenButton Text="Add Folder"
                                     Click="AddFolderName"
                                     ButtonStyle="ButtonStyle.Success"
-                                    Style="margin-bottom: 20px;height: 35px" />
+                                    Style="margin-bottom: 20px; height: 35px" />
                 </div>
             </div>
         </div>
@@ -154,7 +163,9 @@
 
     string GetTextForNode(object data)
     {
-        return Path.GetFileName((string)data);
+        var displayText = Path.GetFileName((string)data);
+        var specie = SpeciesContext.Species.GetValueOrDefault(displayText);
+        return specie ?? displayText;
     }
 
     RenderFragment<RadzenTreeItem> FileOrFolderTemplate = (context) => 
