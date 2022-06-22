@@ -6,13 +6,19 @@
 <h3>Specie Manager</h3>
 <br />
 <div class="row">
-    <div class="col-md-4">
-        <select class="form-select" size="25">
-            @foreach (var specie in SpeciesContext.Species)
-            {
-                <option value="@specie.Key">@specie.Value</option>        
-            }
-        </select>
+    <div class="col-md-4" style="max-width: 250px">
+        <div class="form-group">
+            <select class="form-select" size="25" >
+                @foreach (var specie in SpeciesContext.Species)
+                {
+                    <option value="@specie.Key">@specie.Value</option>        
+                }
+            </select>
+        </div>
+        <div class="form-group" style="display:flex; justify-content:space-evenly">
+            <button class="btn btn-primary">Update</button>
+            <button class="btn btn-danger">Remove</button>
+        </div>
     </div>
     <div class="col-md-8">
         <form enctype="multipart/form-data" method="post" action="/api/file-manager/species">
@@ -32,6 +38,7 @@
         </form>
     </div>
 </div>
+
 @code {
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
