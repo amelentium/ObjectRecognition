@@ -12,21 +12,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-builder.Services.Configure<TelegramBotOptions>(configuration.GetSection("TelegramBotOptions"));
-builder.Services.AddTransient(ser => ser.GetService<IOptions<TelegramBotOptions>>().Value);
-builder.Services.AddSingleton<ITelegramBotClient>(
-    x =>
+//builder.Services.Configure<TelegramBotOptions>(configuration.GetSection("TelegramBotOptions"));
+//builder.Services.AddTransient(ser => ser.GetService<IOptions<TelegramBotOptions>>().Value);
+/*builder.Services.AddSingleton<ITelegramBotClient>(x =>
     {
         var settings = x.GetRequiredService<TelegramBotOptions>();
         return new TelegramBotClient(settings.Token);
     });
-builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
+builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();*/
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();
 builder.Services.AddScoped<ISpeciesContext, SpeciesContext>();
 
 var app = builder.Build();
 
-app.UseTelegramBotWebhook();
+//app.UseTelegramBotWebhook();
 
 if (!app.Environment.IsDevelopment())
 {

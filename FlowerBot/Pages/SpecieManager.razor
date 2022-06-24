@@ -8,7 +8,7 @@
 <div class="row">
     <div class="col-md-4" style="max-width: 250px">
         <div class="form-group">
-            <select class="form-select" size="25" >
+            <select class="form-select" size="25" @bind="SelectedSpecie">
                 @foreach (var specie in SpeciesContext.Species)
                 {
                     <option value="@specie.Key">@specie.Value</option>        
@@ -17,11 +17,12 @@
         </div>
         <div class="form-group" style="display:flex; justify-content:space-evenly">
             <button class="btn btn-primary">Update</button>
-            <button class="btn btn-danger">Remove</button>
+            <button class="btn btn-danger" @onclick="RemoveSpecie">Remove</button>
         </div>
     </div>
+    <iframe name="NoRedirectFrame" id="NoRedirectFrame" style="display: none;"></iframe>
     <div class="col-md-8">
-        <form enctype="multipart/form-data" method="post" action="/api/file-manager/species">
+        <form enctype="multipart/form-data" method="post" action="/api/file-manager/species" target="NoRedirectFrame">
             <div class="form-group">
                 <label for="Name">Name</label>
                 <input id="Name" name="Name" class="form-control" type="text"  placeholder="Flower name" style="max-width:250px"/>
@@ -40,11 +41,18 @@
 </div>
 
 @code {
+    string SelectedSpecie = string.Empty;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/SpecieManager.razor.js");
         }
+    }
+
+    async void RemoveSpecie() 
+    {
+        //await JS.InvokeVoidAsync("fetch", $"https://localhost:7065/api/file-manager/species/{SelectedSpecie}", "{ method: 'DELETE' }"); need fix
     }
 }

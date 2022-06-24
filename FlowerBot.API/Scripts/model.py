@@ -38,7 +38,7 @@ data_transforms = {
 }
 
 # Data load
-data_dir = '../images/flower_images'
+data_dir = '../Images/flower_images'
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'valid']}
 dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=os.cpu_count(), pin_memory=True) for x in ['train', 'valid']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'valid']}

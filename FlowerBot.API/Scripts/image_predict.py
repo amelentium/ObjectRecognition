@@ -11,8 +11,7 @@ model = model.to(core.device)
 
 #Image preparation
 imageName = sys.argv[1]
-imagePath = Image.open(f'../wwwroot/images/user_images/{imageName}.jpg')
-image, image_dn = core.image_process(imagePath)
+image, image_dn = core.image_process(f'../Images/user_images/{imageName}.jpg')
 
 #Make predict
 probs, classes = core.predict(model, image)
@@ -47,6 +46,6 @@ ax2.set_title('Class Probability')
 for i in range(1, 6):
     ax2.text(0.4234, (i-1 + i*0.1 - (i-1)*0.1), f'{probs[i-1]:.4f}')
 
-plt.savefig(f'../wwwroot/images/user_images/{imageName}_result.jpg', bbox_inches='tight')
+plt.savefig(f'../Images/user_images/{imageName}_result.jpg', bbox_inches='tight')
 plt.close()
 exit()

@@ -5,7 +5,7 @@ using Telegram.Bot.Types;
 namespace FlowerBot.Controllers
 {
 	[ApiController]
-	[Route("api/telegram-bot")]
+	[Route("api/telegram-bot/message/update")]
 	public class TelegramBotController : ControllerBase
 	{
 		private readonly ILogger<TelegramBotController> _logger;
@@ -19,10 +19,10 @@ namespace FlowerBot.Controllers
 			_telegramBotService = telegramBotService;
 		}
 
-		[HttpPost("message/update")]
+		[HttpPost]
 		public IActionResult TelegramWebhook([FromBody] Update update)
         {
-			if (!string.IsNullOrEmpty(update.Message?.Photo?.Last()?.FileId))
+			if (update != null)
 			{
 				_ = _telegramBotService.MakePredictAsync(update);
 			}
