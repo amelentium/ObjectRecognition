@@ -1,9 +1,11 @@
 using FlowerBot.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telegram.Bot.Types;
 
 namespace FlowerBot.Controllers
 {
+	[AllowAnonymous]
 	[ApiController]
 	[Route("api/telegram-bot")]
 	public class TelegramBotController : ControllerBase

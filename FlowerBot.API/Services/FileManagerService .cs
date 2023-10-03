@@ -1,14 +1,9 @@
 ﻿using FlowerBot.API.Services.Interfaces;
-using FlowerBot.Exceptions;
-using FlowerBot.Services.Interfaces;
 using System.Diagnostics;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.InputFiles;
 
 namespace FlowerBot.Services
 {
-    public class FileManagerService : IFileManagerService
+	public class FileManagerService : IFileManagerService
 	{
 		private readonly ILogger<FileManagerService> _logger;
 		private readonly IWebHostEnvironment _env;

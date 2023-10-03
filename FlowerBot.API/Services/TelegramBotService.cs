@@ -3,7 +3,6 @@ using FlowerBot.Services.Interfaces;
 using System.Diagnostics;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.InputFiles;
 
 namespace FlowerBot.Services
 {
@@ -82,13 +81,13 @@ namespace FlowerBot.Services
 		{
 			await using Stream stream = System.IO.File.OpenRead($"{_env.ContentRootPath}Images\\user_images\\{imageId}_result.jpg");
 
-			await _telegramBot.SendPhotoAsync(chatId, new InputOnlineFile(content: stream, fileName: "predict_result.jpg"));
+			await _telegramBot.SendPhotoAsync(chatId, new InputFileStream(content: stream, fileName: "predict_result.jpg"));
 		}
 
 		private void ClearUserImages(string imageId)
-        {
-            System.IO.File.Delete($"{_env.ContentRootPath}Images\\user_images\\{imageId}.jpg");
+		{
+			System.IO.File.Delete($"{_env.ContentRootPath}Images\\user_images\\{imageId}.jpg");
 			System.IO.File.Delete($"{_env.ContentRootPath}Images\\user_images\\{imageId}_result.jpg");
-        }
+		}
 	}
 }

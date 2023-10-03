@@ -354,3 +354,4 @@ MigrationBackup/
 
 # Pytorch model
 *.tar
+/FlowerBot/appsettings.Development.json

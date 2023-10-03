@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Telegram.Bot;
 
@@ -11,7 +12,8 @@ public static class StartupExtensions
 		var logger = services.GetRequiredService<ILogger<Program>>();
 		var lifetime = services.GetRequiredService<IHostApplicationLifetime>();
 		var telegramBot = services.GetRequiredService<ITelegramBotClient>();
-		var address = services.GetRequiredService<TelegramBotOptions>().WebHookAddress;
+		var botOptions = services.GetService<IOptions<TelegramBotOptions>>().Value;
+		var address = botOptions.WebHookAddress;
 
 		lifetime.ApplicationStarted.Register(async () =>
 			{

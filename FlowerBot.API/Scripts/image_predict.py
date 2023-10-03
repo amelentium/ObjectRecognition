@@ -1,17 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import torchvision.transforms.functional as TF
 from PIL import Image
 import sys
 import model as core
 
 #Model load
-model, _, _, _ = core.load_checkpoint()
+model, _, _, _, _ = core.load_checkpoint()
 model = model.to(core.device)
 
 #Image preparation
 imageName = sys.argv[1]
-image, image_dn = core.image_process(f'../Images/user_images/{imageName}.jpg')
+imagePath = f'../Images/user_images/{imageName}.jpg'
+image, image_dn = core.image_process(imagePath)
 
 #Make predict
 probs, classes = core.predict(model, image)
@@ -29,7 +29,7 @@ if (probs_dn[0] > probs[0]):
 #Create and save image
 classes = classes.data.cpu()
 classes = classes.numpy().squeeze()
-classes = [core.cat_label_to_name[clazz].title() for clazz in classes]
+classes = [core.label_class_dict[_class_].title() for _class_ in classes]
 
 fig = plt.figure(figsize=(4, 10))
 ax1 = fig.add_subplot(2, 1, 1, xticks=[], yticks=[])
@@ -48,4 +48,5 @@ for i in range(1, 6):
 
 plt.savefig(f'../Images/user_images/{imageName}_result.jpg', bbox_inches='tight')
 plt.close()
+
 exit()

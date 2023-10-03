@@ -1,90 +1,141 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
-from torch import nn, optim
-from torchvision import datasets, transforms, models
-import torchvision.transforms.functional as TF
-from torch.optim import lr_scheduler
+from torch import nn
+from torch.utils.data import DataLoader
 import cv2
-import os
-import time
-import json
+
+from torchvision import transforms, models, datasets
+
+import numpy as np
+import matplotlib.pyplot as plt
+
 import copy
+import json
 from PIL import Image
 
+# Varieble for train status tracking
+train = {'epoch': 0}
+
+# Variables for directories paths
+DATASET_DIR_PATH = 'images/tiny-imagenet'
+TRAIN_IMG_DIR_PATH = 'images/tiny-imagenet/train'
+VAL_IMG_DIR_PATH = 'images/tiny-imagenet/val'
+
 # CPU or GPU select
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+use_cuda = torch.cuda.is_available()
+device = 'cuda' if use_cuda else 'cpu'
+
+if use_cuda:
+  torch.backends.cuda.matmul.allow_tf32 = True
+  torch.backends.cudnn.benchmark = True
+
 
 # Default image augmentation and nornalization parameters
-mean = [0.484, 0.454, 0.401]
-std = [0.225, 0.221, 0.221]
+mean = [0.485, 0.456, 0.406]
+std = [0.229, 0.224, 0.225]
 
 # Default image transformations
 data_transforms = {
     'train': transforms.Compose([
         transforms.Resize(256),
         transforms.RandomRotation(30,),
-        transforms.RandomCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
+        transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ]),
-    'valid': transforms.Compose([
+    'val': transforms.Compose([
         transforms.Resize((224,224)),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ]),
 }
 
-# Data load
-data_dir = '../images/flower_images'
-image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'valid']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=os.cpu_count(), pin_memory=True) for x in ['train', 'valid']}
-dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'valid']}
-class_names = image_datasets['train'].classes
+# Data loaders
+def dataloader_create(data, transform):
+    if data is None: 
+        return None
+    
+    if transform is None:
+        dataset = datasets.ImageFolder(data, transform=transforms.ToTensor())
+    else:
+        dataset = datasets.ImageFolder(data, transform=transform)
 
-# Flower names load 
-with open('cat_to_name.json', 'r') as f:
-    cat_to_name = json.load(f)
+    if use_cuda:
+        kwargs = {'pin_memory': True}
+    else:
+        kwargs = {}
+    
+    dataloader = DataLoader(dataset, batch_size=64, 
+                        shuffle=(True), 
+                        **kwargs)
 
-class_to_idx = image_datasets['train'].class_to_idx
+    return dataloader
 
-cat_label_to_name = {}
-for cat, label in class_to_idx.items():
-    name = cat_to_name.get(cat)
-    cat_label_to_name[label] = name
+def init_dataloaders():
+    dataloaders = {
+        'train': dataloader_create(data=TRAIN_IMG_DIR_PATH, transform=data_transforms['train']),
+        'val': dataloader_create(data=VAL_IMG_DIR_PATH, transform=data_transforms['val'])
+    }
+
+    # Index - Name dictionary
+    with open('cat_to_name.json', 'r') as f:
+        cat_name_dict = json.load(f)
+
+    cat_label_dict = dataloaders['train'].dataset.class_to_idx
+
+    label_class_dict = {}
+    for cat in cat_label_dict:
+        cla = cat_name_dict[cat]
+        label = cat_label_dict[cat]
+        label_class_dict[label] = cla
+
+    return dataloaders, label_class_dict
 
 # Core functions declare
-def model_create():
-    model = models.resnext50_32x4d(pretrained=True)
+def model_create(class_count=0):
+    model = models.resnext50_32x4d(weights=models.ResNeXt50_32X4D_Weights.DEFAULT)
 
     feature_in_count = model.fc.in_features
     feature_out_count = int(feature_in_count/4)
-    class_count = 102
-
+    
     custom_fc = nn.Sequential(
         nn.Linear(feature_in_count, feature_out_count),
         nn.ReLU(inplace=True),
-        nn.Linear(feature_out_count, int(feature_out_count/2)),
-        nn.ReLU(inplace=True),
-        nn.Linear(int(feature_out_count/2), class_count)
+        nn.Linear(int(feature_out_count), class_count)
         )
-
+    
     model.fc = custom_fc
+
     return model
 
-def model_train(model, criterion, optimizer, scheduler, epoch_count=15):
-    start = time.time()
+def model_change_class_count(model, class_count):
+    feature_in_count = models.resnext50_32x4d().fc.in_features
+    feature_out_count = int(feature_in_count/4)
+    
+    custom_fc = nn.Sequential(
+        nn.Linear(feature_in_count, feature_out_count),
+        nn.ReLU(inplace=True),
+        nn.Linear(int(feature_out_count), class_count)
+        )
+    
+    model.fc = custom_fc
+
+    return model    
+
+def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count=15, train_state={}):
     best_wts = copy.deepcopy(model.state_dict())
     best_acc = .0
 
-    for epoch in range(1, epoch_count+1):
-        print(f'Epoch {epoch}/{epoch_count}')
+    dataset_sizes = {
+        'train': len(dataloaders['train'].dataset), 
+        'val': len(dataloaders['val'].dataset)
+    }
 
-        run_start = time.time()
+    for epoch in range(epoch_count):
+        train_state['epoch'] = epoch + 1
  
-        for phase in ['train', 'valid']:
+        for phase in ['train', 'val']:
             model.train() if phase == 'train' else model.eval()                
 
             run_loss = .0
@@ -93,7 +144,7 @@ def model_train(model, criterion, optimizer, scheduler, epoch_count=15):
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-                
+                        
                 optimizer.zero_grad()
                 
                 with torch.set_grad_enabled(phase == 'train'):
@@ -110,32 +161,23 @@ def model_train(model, criterion, optimizer, scheduler, epoch_count=15):
             
             if phase == 'train':
                 scheduler.step()
-            
+                    
             loss = run_loss / dataset_sizes[phase]
             acc = run_corrects.double() / dataset_sizes[phase]
-
-            print(f'{phase} Loss: {loss:.4f} Acc: {acc:.4f}')
             
-            if phase == 'valid' and acc > best_acc:
+            if phase == 'val' and acc > best_acc:
                 best_acc = acc
                 best_wts = copy.deepcopy(model.state_dict())
-        
-        spent_time = time.time() - run_start
-        print(f'Epoch time: {(spent_time//60):.0f}m {(spent_time%60):.2f}s')
-        print()
-
-    spent_time = time.time() - start
-    print(f'Training complete in {(spent_time//60):.0f}m {(spent_time%60):.2f}s')
-    print(f'Best val Acc: {best_acc:4f}')
 
     model.load_state_dict(best_wts)
     return model
 
-def create_checkpoint(model, criterion, optimizer, scheduler, path='./model.tar'):
+def create_checkpoint(model, label_class_dict, criterion, optimizer, scheduler, path='./model.tar'):
     model.to('cpu')
     
     checkpoint = {
                   'model_state_dict': model.state_dict(),
+                  'label_class_dict': label_class_dict,
                   'criterion': criterion.state_dict(),
                   'optimizer': optimizer.state_dict(),
                   'scheduler': scheduler.state_dict()
@@ -147,28 +189,26 @@ def load_checkpoint(path='./model.tar'):
     checkpoint = torch.load(path, map_location=device)
     model = model_create()
    
+    label_class_dict = checkpoint['label_class_dict']
+    model_change_class_count(model, len(label_class_dict))
     model.load_state_dict(checkpoint['model_state_dict'])
+
     criterion = checkpoint['criterion']
     optimizer = checkpoint['optimizer']
     scheduler = checkpoint['scheduler']
     
-    return model, criterion, optimizer, scheduler
+    return model, label_class_dict, criterion, optimizer, scheduler
 
 def image_transforming(image):
-    image = TF.resize(image, 256)    
-    upper_pixel = (image.height - 224) // 2
-    left_pixel = (image.width - 224) // 2
-    image = TF.crop(image, upper_pixel, left_pixel, 224, 224)    
-    image = TF.to_tensor(image)
-    image = TF.normalize(image, mean, std)
+    image = data_transforms['val'](image)
     return image
 
 def image_denoising(path):
     image = cv2.imread(path)
     image = cv2.fastNlMeansDenoisingColored(image, None, 5, 5, 7, 21)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = TF.to_tensor(image)
-    image = TF.to_pil_image(image)
+    image = transforms.ToTensor()(image)
+    image = transforms.ToPILImage()(image)
     image = image_transforming(image)
     return image
 
