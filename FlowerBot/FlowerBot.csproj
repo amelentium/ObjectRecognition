@@ -6,13 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\Images\flower_images" />
     <None Include="wwwroot\Images\user_images" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.22" />
-    <PackageReference Include="Radzen.Blazor" Version="4.16.0" />
+    <PackageReference Include="Radzen.Blazor" Version="4.16.4" />
     <PackageReference Include="Telegram.Bot" Version="19.0.0" />
   </ItemGroup>
 

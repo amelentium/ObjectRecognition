@@ -1,0 +1,67 @@
+﻿@page "/datasets"
+
+@using System.IO;
+@using System.Web;
+@using System.Collections;
+@using FlowerBot.Components;
+
+@inject IWebHostEnvironment HostEnvironment;
+
+<PageTitle>Datasets</PageTitle>
+
+<h3>Dataset Manager</h3>
+
+<div class="row">
+    <div class="col-md-4" style="margin-bottom: 16px">
+        <DatasetsTreeComponent DatasetsPath="@DatasetsPath"
+                               OnDatasetChange="@DatasetChange"/>
+    </div>
+    <div class="col-md-8" style="margin-bottom: 16px">
+        <DatasetImageManager Images="@Images"/>
+    </div>
+</div>
+
+@code {
+    private const string DatasetsRootPath = "images\\data_sets";
+    private string DatasetsPath;
+    private string SelectedDataset;
+
+    private List<ImageObject> Images = new List<ImageObject>();
+
+    protected override void OnInitialized()
+    {
+        DatasetsPath = Path.Combine(HostEnvironment.WebRootPath, DatasetsRootPath);
+    }
+
+    private void DatasetChange(TreeEventArgs args)
+    {
+        SelectedDataset = args.Value as string;
+
+        LoadFiles();
+    }
+
+    private void LoadFiles()
+    {
+        if (!string.IsNullOrEmpty(SelectedDataset))
+        {
+            try
+            {
+                Images = new List<ImageObject>();
+                var FileNames = Directory.EnumerateFileSystemEntries(SelectedDataset).Where(x => x.Contains("."));
+
+                foreach (var item in FileNames)
+                {
+                    Images.Add(new ImageObject()
+                        {
+                            ImageName = Path.GetFileName(item),
+                            ImagePath = item.Replace(HostEnvironment.WebRootPath, string.Empty)
+                        });
+                }
+            }
+            catch
+            {
+                Directory.CreateDirectory(Path.Combine(HostEnvironment.WebRootPath, DatasetsRootPath));
+            }
+        }
+    }
+}

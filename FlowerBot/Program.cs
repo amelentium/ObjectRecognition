@@ -1,4 +1,5 @@
 using FlowerBot;
+using FlowerBot.Options;
 using FlowerBot.Services;
 using FlowerBot.Services.Interfaces;
 using Microsoft.Extensions.Options;

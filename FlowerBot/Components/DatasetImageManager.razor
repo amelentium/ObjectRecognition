@@ -1,0 +1,42 @@
+﻿<h3>Image Manager</h3>
+
+<RadzenDataList WrapItems="true" AllowPaging="true"
+                Data="@Images" TItem="ImageObject">
+    <Template Context="image">
+        @if (image.ImageName == SelectedImage?.ImageName)
+        {
+            <RadzenImage Path="@image.ImagePath"
+                         Style="width:150px;
+                                        padding:10px;
+                                        background-color:darkgrey"
+                         Click="@((args) => SelectImage(image))" />
+        }
+        else
+        {
+            <RadzenImage Path="@image.ImagePath"
+                         Style="width: 150px;
+                                        padding: 10px;
+                                        background-color: white"
+                         Click="@((args) => SelectImage(image))" />
+        }
+    </Template>
+</RadzenDataList>
+
+@code {
+    [Parameter]
+    public List<ImageObject> Images { get; set; }
+
+    private ImageObject SelectedImage;
+
+    private void SelectImage(ImageObject image)
+    {
+        if (SelectedImage?.ImageName == image.ImageName)
+        {
+            SelectedImage = null;
+        }
+        else
+        {
+            SelectedImage = image;
+        }
+    }
+}
