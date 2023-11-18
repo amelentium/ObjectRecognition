@@ -1,0 +1,24 @@
+﻿<h3>Datasets Tree</h3>
+
+<div>
+    <RadzenTree @bind-Value=SelectedDataset
+                Data="@Datasets"
+                Change="@OnDatasetChange"
+                Style="width: 100%; height: 250px">
+        <RadzenTreeLevel HasChildren="@((value) => false)">
+            <Template>
+                <RadzenIcon Icon="folder" />
+                @(context.Value as string)
+            </Template>
+        </RadzenTreeLevel>
+    </RadzenTree>
+</div>
+
+@code {
+    [Parameter]
+    public List<string> Datasets { get; set; }
+    [Parameter]
+    public object SelectedDataset { get; set; }
+    [Parameter]
+    public EventCallback<TreeEventArgs> OnDatasetChange { get; set; }
+}

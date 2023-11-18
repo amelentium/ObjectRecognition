@@ -1,0 +1,35 @@
+﻿<dialog open="@isOpen">
+    <h3>Confirm the deletion</h3>
+    <p>Are you sure you want to delete the @itemName item?</p>
+    <div>
+        <button @onclick="Delete">Yes</button>
+        <button @onclick="Close">No</button>
+    </div>
+</dialog>
+
+@code {
+    private bool isOpen = false;
+    private string itemName;
+    private Delegate onDelete;
+    private object[] onDeleteArgs;
+
+    public void Show(string name, Delegate delete, params object[] args)
+    {
+        isOpen = true;
+        itemName = name;
+        onDelete = delete;
+        onDeleteArgs = args;
+        StateHasChanged();
+    }
+
+    private void Delete()
+    {
+        onDelete.DynamicInvoke(onDeleteArgs);
+        isOpen = false;
+    }
+
+    private void Close()
+    {
+        isOpen = false;
+    }
+}
