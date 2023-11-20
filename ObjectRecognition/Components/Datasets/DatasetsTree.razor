@@ -1,9 +1,25 @@
 ﻿<h3>Datasets Tree</h3>
 
 <div>
-    <RadzenTree @bind-Value=SelectedDataset
+    <button class="btn btn-primary"
+            @onclick=@(() => AddDialog.Show())>
+        Create
+    </button>
+    <button class="btn btn-warning"
+            @onclick=@(() => RenameDialog.Show())
+            disabled=@String.IsNullOrEmpty(SelectedDataset)>
+        Rename
+    </button>
+    <button class="btn btn-danger"
+            @onclick=@(() => DeleteDialog.Show())
+            disabled=@String.IsNullOrEmpty(SelectedDataset)>
+        Delete
+    </button>
+</div>
+<div>
+    <RadzenTree @bind-Value=SelectedTreeItem
                 Data="@Datasets"
-                Change="@OnDatasetChange"
+                Change="@TreeSelectionChange"
                 Style="width: 100%; height: 250px">
         <RadzenTreeLevel HasChildren="@((value) => false)">
             <Template>
@@ -14,11 +30,82 @@
     </RadzenTree>
 </div>
 
+<AddDialog @ref="AddDialog"
+           ItemTypeName="dataset"
+           OnConfirm="AddDataset" />
+<RenameDialog @ref="RenameDialog"
+              ItemTypeName="dataset"
+              OnConfirm="RenameDataset" />
+<DeleteDialog @ref="DeleteDialog"
+              ItemName="@String.Concat(SelectedDataset, " dataset")"
+              OnConfirm="DeleteDataset" />
+
 @code {
     [Parameter]
-    public List<string> Datasets { get; set; }
+    public string DatasetsPath { get; set; }
     [Parameter]
-    public object SelectedDataset { get; set; }
-    [Parameter]
-    public EventCallback<TreeEventArgs> OnDatasetChange { get; set; }
+    public EventCallback<string> OnDatasetChange { get; set; }
+
+    private List<string> Datasets;
+    private object SelectedTreeItem;
+    private string SelectedDataset;
+
+    private AddDialog AddDialog;
+    private RenameDialog RenameDialog;
+    private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
+    {
+        Datasets = Directory.EnumerateDirectories(DatasetsPath)
+                            .Select(x => new DirectoryInfo(x).Name)
+                            .ToList();
+
+        ChangeSelectedDataset(Datasets.First());
+    }
+
+    private void TreeSelectionChange(TreeEventArgs args)
+    {
+        ChangeSelectedDataset(args.Value as string);
+
+        OnDatasetChange.InvokeAsync(SelectedDataset);
+    }
+
+    private void ChangeSelectedDataset(string dataset)
+    {
+        SelectedTreeItem = dataset;
+        SelectedDataset = dataset;        
+    }
+
+    private void AddDataset(string datasetName)
+    {
+        var datasetPath = GenerateDatasetPath(datasetName);
+        Directory.CreateDirectory(datasetPath);
+        Datasets.Add(datasetName);
+        Datasets.Sort();
+        ChangeSelectedDataset(datasetName);
+    }
+
+    private void RenameDataset(string datasetNewName)
+    {
+        var datasetCurrentPath = GenerateDatasetPath(SelectedDataset);
+        var datasetNewPath = GenerateDatasetPath(datasetNewName);
+        Directory.Move(datasetCurrentPath, datasetNewPath);
+        Datasets.Remove(SelectedDataset);
+        Datasets.Add(datasetNewName);
+        Datasets.Sort();
+        ChangeSelectedDataset(datasetNewName);
+    }
+
+    private void DeleteDataset()
+    {
+        var datasetPath = GenerateDatasetPath(SelectedDataset);
+        Directory.Delete(datasetPath, true);
+        Datasets.Remove(SelectedDataset);
+        ChangeSelectedDataset(null);
+    }
+
+    private string GenerateDatasetPath(string datasetName)
+    {
+        return Path.Combine(DatasetsPath, datasetName);
+    }
 }

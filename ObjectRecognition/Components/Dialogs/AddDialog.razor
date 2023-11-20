@@ -1,0 +1,23 @@
+﻿@inherits Dialog<string>;
+
+<dialog open="@IsOpen">
+    <h3>Add item</h3>
+    <p>Enter @ItemTypeName name</p>
+    <input type="text" @bind-value=ItemName/>
+    <div>
+        <button @onclick="AddItem">Add</button>
+        <button @onclick="CloseDialog">Cancel</button>
+    </div>
+</dialog>
+
+@code {
+    [Parameter]
+    public string ItemTypeName { get; set; }
+
+    private string ItemName;
+
+    private void AddItem()
+    {
+        ConfirmAction(ItemName);
+    }
+}

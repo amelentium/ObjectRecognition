@@ -1,0 +1,20 @@
+﻿@inherits Dialog;
+
+<dialog open="@IsOpen">
+    <h3>Confirm item deletion</h3>
+    <p>Are you sure you want to delete the @ItemName item?</p>
+    <div>
+        <button @onclick="Delete">Yes</button>
+        <button @onclick="CloseDialog">No</button>
+    </div>
+</dialog>
+
+@code {
+    [Parameter]
+    public string ItemName { get; set; }
+
+    private void Delete()
+    {
+        ConfirmAction();
+    }
+}
