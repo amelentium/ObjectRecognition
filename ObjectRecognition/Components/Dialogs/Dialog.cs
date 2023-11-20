@@ -6,19 +6,14 @@ namespace ObjectRecognition.Components.Dialogs
     {
         protected bool IsOpen = false;
 
-        protected void ShowDialog()
+        public void Show()
         {
             IsOpen = true;
         }
 
-        protected void CloseDialog()
+        protected void Close()
         {
             IsOpen = false;
-        }
-
-        public void Show()
-        {
-            ShowDialog();
         }
     }
 
@@ -27,7 +22,7 @@ namespace ObjectRecognition.Components.Dialogs
         [Parameter]
         public EventCallback OnConfirm { get; set; }
 
-        protected void ConfirmAction(object arg = null)
+        protected void Confirm(object arg = null)
         {
             OnConfirm.InvokeAsync(arg);
             IsOpen = false;
@@ -39,7 +34,7 @@ namespace ObjectRecognition.Components.Dialogs
         [Parameter]
         public EventCallback<T> OnConfirm { get; set; }
 
-        protected void ConfirmAction(T arg)
+        protected void Confirm(T arg)
         {
             OnConfirm.InvokeAsync(arg);
             IsOpen = false;

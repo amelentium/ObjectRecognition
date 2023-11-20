@@ -1,14 +1,16 @@
 ﻿@inherits Dialog<string>;
 
-<dialog open="@IsOpen">
-    <h3>Add item</h3>
-    <p>Enter @ItemTypeName name</p>
-    <input type="text" @bind-value=ItemName/>
-    <div>
-        <button @onclick="AddItem">Add</button>
-        <button @onclick="CloseDialog">Cancel</button>
-    </div>
-</dialog>
+<div class="dialog" active="@IsOpen.ToString()">
+    <dialog open="@IsOpen">
+        <h3>Add item</h3>
+        <p>Enter @ItemTypeName name</p>
+        <input type="text" @bind-value=ItemName/>
+        <div>
+            <button @onclick="AddItem">Add</button>
+            <button @onclick="Close">Cancel</button>
+        </div>
+    </dialog>
+</div>
 
 @code {
     [Parameter]
@@ -18,6 +20,6 @@
 
     private void AddItem()
     {
-        ConfirmAction(ItemName);
+        Confirm(ItemName);
     }
 }
