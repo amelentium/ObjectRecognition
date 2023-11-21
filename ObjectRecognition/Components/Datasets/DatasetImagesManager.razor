@@ -1,4 +1,4 @@
-﻿<h3>Image Manager</h3>
+﻿<h3>Images</h3>
 
 <RadzenDataList WrapItems="true" AllowPaging="true"
                 Data="@Images" TItem="string">
@@ -23,15 +23,41 @@
 </RadzenDataList>
 
 @code {
-    [Parameter]
-    public List<string> Images { get; set; }
+    private List<string> Images;
 
     private string SelectedImage;
+
+    private void LoadDatasetImages(string dataset)
+    {
+        Images = new List<string>();
+
+        if (!string.IsNullOrEmpty(dataset))
+        {
+            try
+            {
+                var datasetPath = Path.Combine(Constants.DatasetsPath, dataset);
+
+                Images.AddRange(Directory.GetFiles(datasetPath)
+                                .Select(x => x.Replace(Constants.WebRootPath, string.Empty))
+                                );
+            }
+            catch
+            {
+                Directory.CreateDirectory(Constants.DatasetsPath);
+            }
+        }
+    }
 
     private void SelectImage(string image)
     {
         SelectedImage = SelectedImage == image
                         ? null
                         : image;
+    }
+
+    public void DatasetChange(string dataset)
+    {
+        LoadDatasetImages(dataset);
+        StateHasChanged();
     }
 }

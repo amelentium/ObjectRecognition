@@ -1,9 +1,11 @@
-﻿@inherits Dialog<string>;
+﻿@using ObjectRecognition.Enums;
+
+@inherits Dialog<string>;
 
 <div class="dialog" active="@IsOpen.ToString()">
     <dialog open="@IsOpen">
         <h3>Add item</h3>
-        <p>Enter @ItemTypeName name</p>
+        <p>Enter @(ItemType.ToString().ToLower()) name</p>
         <input type="text" @bind-value=ItemName/>
         <div>
             <button @onclick="AddItem">Add</button>
@@ -14,7 +16,7 @@
 
 @code {
     [Parameter]
-    public string ItemTypeName { get; set; }
+    public ItemType ItemType { get; set; }
 
     private string ItemName;
 

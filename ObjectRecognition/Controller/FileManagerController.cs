@@ -1,5 +1,5 @@
-using ObjectRecognition.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using ObjectRecognition.Services.Interfaces;
 
 namespace ObjectRecognition.Controllers
 {
@@ -50,10 +50,9 @@ namespace ObjectRecognition.Controllers
 
                         string path = Path.Combine(_environment.WebRootPath, "images", RequestedPath, file.FileName);
 
-                        using (var stream = new FileStream(path, FileMode.Create))
-                        {
-                            await file.CopyToAsync(stream);
-                        }
+                        using var stream = new FileStream(path, FileMode.Create);
+
+                        await file.CopyToAsync(stream);
                     }
                 }
                 return StatusCode(200);

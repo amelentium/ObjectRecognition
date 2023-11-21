@@ -8,8 +8,9 @@ using Telegram.Bot;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+builder.Environment.SetConstants();
 builder.Services.AddControllers()
-	.AddNewtonsoftJson();
+                .AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

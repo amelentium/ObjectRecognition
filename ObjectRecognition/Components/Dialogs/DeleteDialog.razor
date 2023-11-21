@@ -1,9 +1,11 @@
-﻿@inherits Dialog;
+﻿@using ObjectRecognition.Enums;
+
+@inherits Dialog;
 
 <div class="dialog" active="@IsOpen.ToString()">
     <dialog open="@IsOpen">
         <h3>Confirm item deletion</h3>
-        <p>Are you sure you want to delete the @ItemName item?</p>
+        <p>Are you sure you want to delete the @(ItemName) @(ItemType.ToString().ToLower())?</p>
         <div>
             <button @onclick="Delete">Yes</button>
             <button @onclick="Close">No</button>
@@ -12,6 +14,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public ItemType ItemType { get; set; }
+
     [Parameter]
     public string ItemName { get; set; }
 

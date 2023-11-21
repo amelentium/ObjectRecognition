@@ -1,0 +1,28 @@
+﻿@page "/datasets"
+
+@using System.IO;
+@using System.Web;
+@using System.Collections;
+
+@inject IWebHostEnvironment HostEnvironment;
+
+<PageTitle>Datasets</PageTitle>
+
+<h3>Dataset Manager</h3>
+<div class="row">
+    <div class="col-md-2" style="margin-bottom: 16px">
+        <DatasetsManager OnDatasetChange="@((dataset) => ClassesManager.DatasetChange(dataset))" />
+    </div>
+    <div class="col-md-2" style="margin-bottom: 16px">
+        <DatasetClassesManager @ref="ClassesManager"
+                               OnDatasetClassChange="@((dataset) => ImagesManager.DatasetChange(dataset))" />
+    </div>
+    <div class="col-md-8" style="margin-bottom: 16px">
+        <DatasetImagesManager @ref="ImagesManager" />
+    </div>
+</div>
+
+@code {
+    private DatasetClassesManager ClassesManager;
+    private DatasetImagesManager ImagesManager;
+}

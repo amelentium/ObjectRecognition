@@ -1,0 +1,157 @@
+﻿@using ObjectRecognition.Enums;
+@using ObjectRecognition.Helpers;
+@using System.Text.Json;
+
+@inject IJSRuntime JS
+
+<h3>Classes</h3>
+
+@if (Classes != null)
+{
+    <div>
+        <button class="btn btn-primary"
+                @onclick=@(() => AddDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedDataset)>
+            Create
+        </button>
+        <button class="btn btn-warning"
+                @onclick=@(() => RenameDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedClass)>
+            Rename
+        </button>
+        <button class="btn btn-danger"
+                @onclick=@(() => DeleteDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedClass)>
+            Delete
+        </button>
+    </div>
+    <div>
+        <RadzenTree @bind-Value=SelectedTreeItem
+                    Data="@Classes.Keys"
+                    Change="@TreeSelectionChange"
+                    Style="width: 100%; height: 250px">
+            <RadzenTreeLevel HasChildren="@((value) => false)">
+                <Template>
+                    <RadzenIcon Icon="label_outline" />
+                    @(Classes[context.Value as string])
+                </Template>
+            </RadzenTreeLevel>
+        </RadzenTree>
+    </div>
+}
+
+<AddDialog @ref="AddDialog"
+           ItemType=@ItemType.DatasetClass
+           OnConfirm="AddClass" />
+<RenameDialog @ref="RenameDialog"
+              ItemType=@ItemType.DatasetClass
+              OnConfirm="RenameClass" />
+<DeleteDialog @ref="DeleteDialog"
+              ItemType=@ItemType.DatasetClass
+              ItemName=@SelectedClass
+              OnConfirm="DeleteClass" />
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnDatasetClassChange { get; set; }
+
+    private Dictionary<string, string> Classes;
+    private object SelectedTreeItem;
+    private string SelectedClass;
+    private string SelectedDataset;
+
+    private AddDialog AddDialog;
+    private RenameDialog RenameDialog;
+    private DeleteDialog DeleteDialog;
+
+    public void DatasetChange(string dataset)
+    {
+        SelectedDataset = dataset;
+        LoadDatasetClasses(dataset);
+        SelectedClass = null;
+        StateHasChanged();
+    }
+
+    private void LoadDatasetClasses(string dataset)
+    {
+        if (!string.IsNullOrEmpty(dataset))
+        {
+            var classesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset);
+
+            try
+            {
+                if (File.Exists(classesPath))
+                {
+                    using var classesJsonReader = File.OpenText(classesPath);
+
+                    Classes = JsonSerializer.Deserialize<Dictionary<string, string>>(classesJsonReader.BaseStream);
+
+                    classesJsonReader.Close();
+                }
+                else
+                {
+                    var file = File.Create(classesPath);
+
+                    file.Close();
+
+                    Classes = new();
+                }
+            }
+            catch (Exception ex)
+            {
+                JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+
+                Classes = null;
+            }
+        } 
+        else
+        {
+            Classes = null;
+        }
+    }
+
+    private void TreeSelectionChange(TreeEventArgs args)
+    {
+        ChangeSelectedClass(args.Value as string);
+
+        OnDatasetClassChange.InvokeAsync(SelectedClass);
+    }
+
+    private void ChangeSelectedClass(string itemKey)
+    {
+        SelectedTreeItem = itemKey;
+        SelectedClass = Classes[itemKey];
+    }
+
+    private void AddClass(string className)
+    {
+        var key = Guid.NewGuid().ToString();
+
+        Classes.Add(key, className);
+
+        SaveChanges();
+    }
+
+    private void RenameClass(string classNewName)
+    {
+        Classes[SelectedTreeItem as string] = classNewName;
+
+        SaveChanges();
+    }
+
+    private void DeleteClass()
+    {
+        Classes.Remove(SelectedTreeItem as string);
+
+        SaveChanges();
+    }
+
+    private async void SaveChanges()
+    {
+        var classesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset);
+
+        var classesJson = JsonSerializer.Serialize(Classes);
+
+        await File.WriteAllTextAsync(classesPath, classesJson);
+    }
+}

@@ -44,18 +44,17 @@ namespace ObjectRecognition.Services
 		{
 			var rootPath = _env.ContentRootPath;
 			var imagePath = $"{rootPath}wwwroot\\images\\user_images\\{imageId}.jpg";
-			using (var imageStream = System.IO.File.OpenWrite(imagePath))
-			{
-				try
-				{
-					var image = await _telegramBot.GetInfoAndDownloadFileAsync(imageId, imageStream);
-				}
-				catch
-				{
-					throw new TelegramImageDownloadException();
-				}
-			}
-		}
+            using var imageStream = System.IO.File.OpenWrite(imagePath);
+
+            try
+            {
+                var image = await _telegramBot.GetInfoAndDownloadFileAsync(imageId, imageStream);
+            }
+            catch
+            {
+                throw new TelegramImageDownloadException();
+            }
+        }
 
 		private async Task ExecutePredictScript(string imageId)
 		{

@@ -1,4 +1,6 @@
-﻿<h3>Datasets Tree</h3>
+﻿@using ObjectRecognition.Enums
+
+<h3>Datasets</h3>
 
 <div>
     <button class="btn btn-primary"
@@ -31,18 +33,17 @@
 </div>
 
 <AddDialog @ref="AddDialog"
-           ItemTypeName="dataset"
+           ItemType=@ItemType.Dataset
            OnConfirm="AddDataset" />
 <RenameDialog @ref="RenameDialog"
-              ItemTypeName="dataset"
+              ItemType=@ItemType.Dataset
               OnConfirm="RenameDataset" />
 <DeleteDialog @ref="DeleteDialog"
-              ItemName="@String.Concat(SelectedDataset, " dataset")"
+              ItemType=@ItemType.Dataset
+              ItemName=@SelectedDataset
               OnConfirm="DeleteDataset" />
 
 @code {
-    [Parameter]
-    public string DatasetsPath { get; set; }
     [Parameter]
     public EventCallback<string> OnDatasetChange { get; set; }
 
@@ -56,7 +57,7 @@
 
     protected override void OnInitialized()
     {
-        Datasets = Directory.EnumerateDirectories(DatasetsPath)
+        Datasets = Directory.EnumerateDirectories(Constants.DatasetsPath)
                             .Select(x => new DirectoryInfo(x).Name)
                             .ToList();
 
@@ -106,6 +107,6 @@
 
     private string GenerateDatasetPath(string datasetName)
     {
-        return Path.Combine(DatasetsPath, datasetName);
+        return Path.Combine(Constants.DatasetsPath, datasetName);
     }
 }
