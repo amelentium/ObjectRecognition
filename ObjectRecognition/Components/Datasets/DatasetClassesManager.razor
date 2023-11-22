@@ -4,41 +4,47 @@
 
 @inject IJSRuntime JS
 
-<h3>Classes</h3>
+<div class="centered">
+    <h3>Classes</h3>
 
-@if (Classes != null)
-{
-    <div>
-        <button class="btn btn-primary"
-                @onclick=@(() => AddDialog.Show())
-                disabled=@String.IsNullOrEmpty(SelectedDataset)>
-            Create
-        </button>
-        <button class="btn btn-warning"
-                @onclick=@(() => RenameDialog.Show())
-                disabled=@String.IsNullOrEmpty(SelectedClass)>
-            Rename
-        </button>
-        <button class="btn btn-danger"
-                @onclick=@(() => DeleteDialog.Show())
-                disabled=@String.IsNullOrEmpty(SelectedClass)>
-            Delete
-        </button>
-    </div>
-    <div>
-        <RadzenTree @bind-Value=SelectedTreeItem
-                    Data="@Classes.Keys"
-                    Change="@TreeSelectionChange"
-                    Style="width: 100%; height: 250px">
-            <RadzenTreeLevel HasChildren="@((value) => false)">
-                <Template>
-                    <RadzenIcon Icon="label_outline" />
-                    @(Classes[context.Value as string])
-                </Template>
-            </RadzenTreeLevel>
-        </RadzenTree>
-    </div>
-}
+    @if (Classes != null)
+    {
+        <div class="btn-panel">
+            <button class="btn btn-primary oi oi-plus"
+                    @onclick=@(() => AddDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedDataset)>
+            </button>
+            <button class="btn btn-warning oi oi-pencil"
+                    @onclick=@(() => RenameDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedClass)>
+            </button>
+            <button class="btn btn-danger oi oi-trash"
+                    @onclick=@(() => DeleteDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedClass)>
+            </button>
+        </div>
+        @if (Classes.Count != 0)
+        {
+            <RadzenTree @bind-Value=SelectedTreeItem
+                        Data="@Classes"
+                        Change="@TreeSelectionChange"
+                        Style="width: 100%; height: 250px">
+                <RadzenTreeLevel HasChildren="@((value) => false)">
+                    <Template>
+                        <RadzenIcon Icon="bookmark" />
+                        @(context.Value as string)
+                    </Template>
+                </RadzenTreeLevel>
+            </RadzenTree>
+        }
+        else
+        {
+            <div>
+                Empty
+            </div>
+        }
+    }
+</div>
 
 <AddDialog @ref="AddDialog"
            ItemType=@ItemType.DatasetClass
@@ -53,9 +59,9 @@
 
 @code {
     [Parameter]
-    public EventCallback<string> OnDatasetClassChange { get; set; }
+    public EventCallback<string> ClassChange { get; set; }
 
-    private Dictionary<string, string> Classes;
+    private List<string> Classes;
     private object SelectedTreeItem;
     private string SelectedClass;
     private string SelectedDataset;
@@ -64,7 +70,7 @@
     private RenameDialog RenameDialog;
     private DeleteDialog DeleteDialog;
 
-    public void DatasetChange(string dataset)
+    public void OnDatasetChange(string dataset)
     {
         SelectedDataset = dataset;
         LoadDatasetClasses(dataset);
@@ -76,33 +82,11 @@
     {
         if (!string.IsNullOrEmpty(dataset))
         {
-            var classesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset);
+            var classesPath = FileSystemHelper.GetItemPath(ItemType.Dataset, SelectedDataset);
 
-            try
-            {
-                if (File.Exists(classesPath))
-                {
-                    using var classesJsonReader = File.OpenText(classesPath);
-
-                    Classes = JsonSerializer.Deserialize<Dictionary<string, string>>(classesJsonReader.BaseStream);
-
-                    classesJsonReader.Close();
-                }
-                else
-                {
-                    var file = File.Create(classesPath);
-
-                    file.Close();
-
-                    Classes = new();
-                }
-            }
-            catch (Exception ex)
-            {
-                JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
-
-                Classes = null;
-            }
+            Classes = Directory.EnumerateDirectories(classesPath)
+                                            .Select(x => new DirectoryInfo(x).Name)
+                                            .ToList();
         } 
         else
         {
@@ -114,44 +98,63 @@
     {
         ChangeSelectedClass(args.Value as string);
 
-        OnDatasetClassChange.InvokeAsync(SelectedClass);
+        ClassChange.InvokeAsync(SelectedClass);
     }
 
-    private void ChangeSelectedClass(string itemKey)
+    private void ChangeSelectedClass(string @class)
     {
-        SelectedTreeItem = itemKey;
-        SelectedClass = Classes[itemKey];
+        SelectedTreeItem = @class;
+        SelectedClass = @class;
     }
 
     private void AddClass(string className)
     {
-        var key = Guid.NewGuid().ToString();
+        var classPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, className);
 
-        Classes.Add(key, className);
-
-        SaveChanges();
+        try
+        {
+            var classDirectory = Directory.CreateDirectory(classPath);
+            Classes.Add(classDirectory.Name);
+            Classes.Sort();
+            ChangeSelectedClass(classDirectory.Name);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 
     private void RenameClass(string classNewName)
     {
-        Classes[SelectedTreeItem as string] = classNewName;
+        var classCurrentPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, SelectedClass);
+        var classNewPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, classNewName);
 
-        SaveChanges();
+        try
+        {
+            Directory.Move(classCurrentPath, classNewPath);
+            Classes.Remove(SelectedClass);
+            Classes.Add(classNewName);
+            Classes.Sort();
+            ChangeSelectedClass(classNewName);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 
     private void DeleteClass()
     {
-        Classes.Remove(SelectedTreeItem as string);
-
-        SaveChanges();
-    }
-
-    private async void SaveChanges()
-    {
-        var classesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset);
-
-        var classesJson = JsonSerializer.Serialize(Classes);
-
-        await File.WriteAllTextAsync(classesPath, classesJson);
+        try
+        {
+            var classPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, SelectedClass);
+            Directory.Delete(classPath, true);
+            Classes.Remove(SelectedClass);
+            ChangeSelectedClass(null);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 }

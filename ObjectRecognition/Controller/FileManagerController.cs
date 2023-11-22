@@ -8,15 +8,12 @@ namespace ObjectRecognition.Controllers
     public class FileManagerController : ControllerBase
     {
         private readonly IWebHostEnvironment _environment;
-        private readonly ILogger<FileManagerController> _logger;
         private readonly IFileManagerService _fileManagerService;
 
         public FileManagerController(
-            ILogger<FileManagerController> logger,
             IFileManagerService fileManagerService,
             IWebHostEnvironment environment)
         {
-            _logger = logger;
             _fileManagerService = fileManagerService;
             _environment = environment;
         }

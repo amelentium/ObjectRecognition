@@ -6,14 +6,16 @@ namespace ObjectRecognition.Helpers
     {
         public static string GetItemPath(ItemType itemType, params string[] itemRelativeHierarchy)
         {
-            return itemType switch
+            var pathTemplate = itemType switch
             {
-                    ItemType.Dataset => Constants.DatasetsPath,
-                    ItemType.DatasetClass or
-                    ItemType.DatasetImage => string.Format(Constants.DatasetClassesPathTemplate, itemRelativeHierarchy),
+                    ItemType.Dataset => Constants.DatasetsPath + "\\{0}",
+                    ItemType.DatasetClass => Constants.DatasetsPath + "\\{0}\\{1}",
+                    ItemType.DatasetImage => Constants.DatasetsPath + "\\{0}\\{1}\\{2}",
 
-                    _ => Constants.WebRootPath,
+                    _ => string.Empty,
             };
+
+            return string.Format(pathTemplate, itemRelativeHierarchy);
         }
     }
 }

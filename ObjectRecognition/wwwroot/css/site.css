@@ -71,6 +71,7 @@ a, .btn-link {
 	height: 100%;
 	z-index: 2;
 	background: rgba(0, 0, 0, 0.3);
+	text-align: center;
 
 	&[active="True"]
 	{
@@ -82,4 +83,17 @@ a, .btn-link {
 	{
 		display: none;
 	}
+}
+
+.btn-panel {
+	margin-bottom: 8px;
+}
+
+.centered {
+	text-align: center;
+}
+
+.images {
+	display: flex;
+	align-content: space-around;
 }

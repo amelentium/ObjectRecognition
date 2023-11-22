@@ -1,63 +1,198 @@
-﻿<h3>Images</h3>
+﻿@using ObjectRecognition.Enums
+@using ObjectRecognition.Helpers
 
-<RadzenDataList WrapItems="true" AllowPaging="true"
-                Data="@Images" TItem="string">
-    <Template Context="image">
-        @if (image == SelectedImage)
-        {
-            <RadzenImage Path="@image"
-                         Style="width: 150px;
-                                padding:10px;
-                                background-color:darkgrey"
-                         Click="@((args) => SelectImage(image))" />
-        }
-        else
-        {
-            <RadzenImage Path="@image"
-                         Style="width: 150px;
-                                padding: 10px;
-                                background-color: white"
-                         Click="@((args) => SelectImage(image))" />
-        }
-    </Template>
-</RadzenDataList>
+@inject IJSRuntime JS
+
+<div class="centered">
+    <h3>Images</h3>
+
+    @if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
+    {
+        <div class="btn-panel">
+            <button class="btn btn-primary oi oi-plus"
+                    @onclick=@(() => new object())>
+            </button>
+            <button class="btn btn-danger oi oi-trash"
+                    @onclick=@(() => DeleteDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedImage)>
+            </button>
+        </div>
+
+        <div class="images">
+            <div class="col col-md-6">
+                <h3>Train</h3>
+
+                @if (TrainImages.Count != 0)
+                {
+                    <RadzenDataList WrapItems="true" AllowPaging="true"
+                                    Data="@TrainImages" TItem="string">
+                        <Template Context="image">
+                            <RadzenImage Path="@NormalizeImagePath(image)"
+                                         Style="@getImageStyle(image)"
+                                         Click="@((args) => SelectImage(image, true))" />
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <div>
+                        Empty
+                    </div>
+                }
+            </div>
+            <div class="col col-md-6">
+                <h3>Test</h3>
+
+                @if (TestImages.Count != 0)
+                {
+                    <RadzenDataList WrapItems="true" AllowPaging="true"
+                                    Data="@TestImages" TItem="string">
+                        <Template Context="image">
+                            <RadzenImage Path="@NormalizeImagePath(image)"
+                                         Style="@getImageStyle(image)"
+                                         Click="@((args) => SelectImage(image, false))" />
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <div>
+                        Empty
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@*Add image upload dialog*@
+
+<DeleteDialog @ref="DeleteDialog"
+              ItemType=@ItemType.DatasetImage
+              ItemName=@(GetImageName(SelectedImage))
+              OnConfirm="DeleteImage" />
 
 @code {
-    private List<string> Images;
+    private const string imageStyle = "width: 160px; height: 90px; padding: 8px; background: {0}";
+    private Func<string, string> getImageBackground;
+    private Func<string, string> getImageStyle;
+    private string imageTypeFolderName => IsTrainImageSelected
+                                          ? Constants.TrainImagesFolderName
+                                          : Constants.TestImagesFolderName;
 
+    private List<string> TrainImages;
+    private List<string> TestImages;
+
+    private bool IsTrainImageSelected;
     private string SelectedImage;
+    private string SelectedClass;
+    private string SelectedDataset;
 
-    private void LoadDatasetImages(string dataset)
+    private AddDialog AddDialog;
+    private RenameDialog RenameDialog;
+    private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
     {
-        Images = new List<string>();
+        getImageBackground = (string image) => image == SelectedImage ? "darkgrey" : "none";
+        getImageStyle = (string image) => string.Format(imageStyle, getImageBackground(image));
+    }
 
-        if (!string.IsNullOrEmpty(dataset))
+    public void OnDatasetChange(string dataset)
+    {
+        SelectedDataset = dataset;
+        SelectedClass = null;
+        LoadDatasetImages();
+        StateHasChanged();
+    }
+
+    public void OnClassChange(string @class)
+    {
+        SelectedClass = @class;
+        LoadDatasetImages();
+        StateHasChanged();
+    }
+
+    private void LoadDatasetImages()
+    {
+        TrainImages = new List<string>();
+        TestImages = new List<string>();
+
+        if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
         {
+            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, Constants.TrainImagesFolderName);
+            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, Constants.TestImagesFolderName);
+
             try
             {
-                var datasetPath = Path.Combine(Constants.DatasetsPath, dataset);
+                TrainImages.AddRange(Directory.GetFiles(trainImagesPath)
+                                    .Where(x => IsValidImageFile(x))
+                                    );
 
-                Images.AddRange(Directory.GetFiles(datasetPath)
-                                .Select(x => x.Replace(Constants.WebRootPath, string.Empty))
-                                );
+                TestImages.AddRange(Directory.GetFiles(testImagesPath)
+                                    .Where(x => IsValidImageFile(x))
+                                    );
             }
             catch
             {
-                Directory.CreateDirectory(Constants.DatasetsPath);
+                Directory.CreateDirectory(trainImagesPath);
+                Directory.CreateDirectory(testImagesPath);
             }
         }
     }
 
-    private void SelectImage(string image)
+    private void SelectImage(string image, bool isTrainImage)
     {
         SelectedImage = SelectedImage == image
                         ? null
                         : image;
+
+        IsTrainImageSelected = isTrainImage;
     }
 
-    public void DatasetChange(string dataset)
+    private string NormalizeImagePath(string image) => image.Replace(Constants.WebRootPath, string.Empty);
+
+    private bool IsValidImageFile(string file)
     {
-        LoadDatasetImages(dataset);
-        StateHasChanged();
+        var fileInfo = new System.IO.FileInfo(file);
+
+        var fileExtention = fileInfo.Extension.Substring(1).ToUpper();
+
+        return Constants.ImageFileExtentions.Contains(fileExtention);
+    }
+
+    private string GetImageName(string image)
+    {
+        return image != null
+               ? new System.IO.FileInfo(SelectedClass).Name
+               : string.Empty;
+    }
+
+    private void UploadImage(bool isTrain = true)
+    {
+
+    }
+
+    private void DeleteImage()
+    {
+        try
+        {
+            File.Delete(SelectedImage);
+
+            if (IsTrainImageSelected)
+            {
+                TrainImages.Remove(SelectedImage);
+            }
+            else
+            {
+                TestImages.Remove(SelectedImage);
+            }
+
+            SelectImage(null, IsTrainImageSelected);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 }

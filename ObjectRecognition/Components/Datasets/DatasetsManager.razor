@@ -1,35 +1,45 @@
 ﻿@using ObjectRecognition.Enums
+@using ObjectRecognition.Helpers
 
-<h3>Datasets</h3>
+@inject IJSRuntime JS
 
-<div>
-    <button class="btn btn-primary"
-            @onclick=@(() => AddDialog.Show())>
-        Create
-    </button>
-    <button class="btn btn-warning"
-            @onclick=@(() => RenameDialog.Show())
-            disabled=@String.IsNullOrEmpty(SelectedDataset)>
-        Rename
-    </button>
-    <button class="btn btn-danger"
-            @onclick=@(() => DeleteDialog.Show())
-            disabled=@String.IsNullOrEmpty(SelectedDataset)>
-        Delete
-    </button>
-</div>
-<div>
-    <RadzenTree @bind-Value=SelectedTreeItem
-                Data="@Datasets"
-                Change="@TreeSelectionChange"
-                Style="width: 100%; height: 250px">
-        <RadzenTreeLevel HasChildren="@((value) => false)">
-            <Template>
-                <RadzenIcon Icon="folder" />
-                @(context.Value as string)
-            </Template>
-        </RadzenTreeLevel>
-    </RadzenTree>
+<div class="centered">
+    <h3>Datasets</h3>
+
+    <div class="btn-panel">
+        <button class="btn btn-primary oi oi-plus"
+                @onclick=@(() => AddDialog.Show())>
+        </button>
+        <button class="btn btn-warning oi oi-pencil"
+                @onclick=@(() => RenameDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedDataset)>
+        </button>
+        <button class="btn btn-danger oi oi-trash"
+                @onclick=@(() => DeleteDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedDataset)>
+        </button>
+    </div>
+
+    @if (Datasets.Count != 0)
+    {
+        <RadzenTree @bind-Value=SelectedTreeItem
+                    Data="@Datasets"
+                    Change="@TreeSelectionChange"
+                    Style="width: 100%; height: 250px">
+            <RadzenTreeLevel HasChildren="@((value) => false)">
+                <Template>
+                    <RadzenIcon Icon="book" />
+                    @(context.Value as string)
+                </Template>
+            </RadzenTreeLevel>
+        </RadzenTree>
+    }
+    else
+    {
+        <div>
+            Empty
+        </div>
+    }
 </div>
 
 <AddDialog @ref="AddDialog"
@@ -45,7 +55,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<string> OnDatasetChange { get; set; }
+    public EventCallback<string> DatasetChange { get; set; }
 
     private List<string> Datasets;
     private object SelectedTreeItem;
@@ -60,15 +70,13 @@
         Datasets = Directory.EnumerateDirectories(Constants.DatasetsPath)
                             .Select(x => new DirectoryInfo(x).Name)
                             .ToList();
-
-        ChangeSelectedDataset(Datasets.First());
     }
 
     private void TreeSelectionChange(TreeEventArgs args)
     {
         ChangeSelectedDataset(args.Value as string);
 
-        OnDatasetChange.InvokeAsync(SelectedDataset);
+        DatasetChange.InvokeAsync(SelectedDataset);
     }
 
     private void ChangeSelectedDataset(string dataset)
@@ -79,34 +87,52 @@
 
     private void AddDataset(string datasetName)
     {
-        var datasetPath = GenerateDatasetPath(datasetName);
-        Directory.CreateDirectory(datasetPath);
-        Datasets.Add(datasetName);
-        Datasets.Sort();
-        ChangeSelectedDataset(datasetName);
+        var datasetPath = FileSystemHelper.GetItemPath(ItemType.Dataset, datasetName);
+
+        try
+        {
+            var datasetDirectory = Directory.CreateDirectory(datasetPath);
+            Datasets.Add(datasetDirectory.Name);
+            Datasets.Sort();
+            ChangeSelectedDataset(datasetDirectory.Name);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 
     private void RenameDataset(string datasetNewName)
     {
-        var datasetCurrentPath = GenerateDatasetPath(SelectedDataset);
-        var datasetNewPath = GenerateDatasetPath(datasetNewName);
-        Directory.Move(datasetCurrentPath, datasetNewPath);
-        Datasets.Remove(SelectedDataset);
-        Datasets.Add(datasetNewName);
-        Datasets.Sort();
-        ChangeSelectedDataset(datasetNewName);
+        var datasetCurrentPath = FileSystemHelper.GetItemPath(ItemType.Dataset, SelectedDataset);
+        var datasetNewPath = FileSystemHelper.GetItemPath(ItemType.Dataset, datasetNewName);
+
+        try
+        {
+            Directory.Move(datasetCurrentPath, datasetNewPath);
+            Datasets.Remove(SelectedDataset);
+            Datasets.Add(datasetNewName);
+            Datasets.Sort();
+            ChangeSelectedDataset(datasetNewName);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 
     private void DeleteDataset()
     {
-        var datasetPath = GenerateDatasetPath(SelectedDataset);
-        Directory.Delete(datasetPath, true);
-        Datasets.Remove(SelectedDataset);
-        ChangeSelectedDataset(null);
-    }
-
-    private string GenerateDatasetPath(string datasetName)
-    {
-        return Path.Combine(Constants.DatasetsPath, datasetName);
+        try
+        {
+            var datasetPath = FileSystemHelper.GetItemPath(ItemType.Dataset, SelectedDataset);
+            Directory.Delete(datasetPath, true);
+            Datasets.Remove(SelectedDataset);
+            ChangeSelectedDataset(null);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 }

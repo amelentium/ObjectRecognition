@@ -2,8 +2,9 @@
 {
     public enum ItemType
     {
-        Dataset,
-        DatasetClass,
-        DatasetImage,
+        Root = 0,
+        Dataset = 1,
+        DatasetClass = 2,
+        DatasetImage = 3,
     }
 }

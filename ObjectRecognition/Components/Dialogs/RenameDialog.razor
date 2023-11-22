@@ -1,11 +1,12 @@
 ﻿@using ObjectRecognition.Enums;
+@using ObjectRecognition.Extentions
 
 @inherits Dialog<string>;
 
 <div class="dialog" active="@IsOpen.ToString()">
     <dialog open="@IsOpen">
         <h3>Rename item</h3>
-        <p>Enter new @(ItemType.ToString().ToLower()) name</p>
+        <p>Enter new @(ItemTypeName) name</p>
         <input type="text" @bind-value=ItemName />
         <div>
             <button @onclick="Rename">Rename</button>
@@ -18,6 +19,7 @@
     [Parameter]
     public ItemType ItemType { get; set; }
 
+    private string ItemTypeName => ItemType.ToString().SplitCamelCase();
     private string ItemName;
 
     private void Rename()
