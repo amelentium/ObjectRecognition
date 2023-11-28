@@ -5,6 +5,7 @@
         Root = 0,
         Dataset = 1,
         DatasetClass = 2,
-        DatasetImage = 3,
+        DatasetImageFolder = 3,
+        DatasetImage = 4,
     }
 }

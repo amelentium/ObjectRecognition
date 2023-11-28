@@ -1,4 +1,5 @@
 ﻿@using ObjectRecognition.Enums;
+@using ObjectRecognition.Extentions
 @using ObjectRecognition.Helpers;
 @using System.Text.Json;
 
@@ -10,7 +11,7 @@
     @if (Classes != null)
     {
         <div class="btn-panel">
-            <button class="btn btn-primary oi oi-plus"
+            <button class="btn btn-success oi oi-plus"
                     @onclick=@(() => AddDialog.Show())
                     disabled=@String.IsNullOrEmpty(SelectedDataset)>
             </button>
@@ -23,7 +24,7 @@
                     disabled=@String.IsNullOrEmpty(SelectedClass)>
             </button>
         </div>
-        @if (Classes.Count != 0)
+        @if (Classes?.Count != 0)
         {
             <RadzenTree @bind-Value=SelectedTreeItem
                         Data="@Classes"
@@ -31,7 +32,7 @@
                         Style="width: 100%; height: 250px">
                 <RadzenTreeLevel HasChildren="@((value) => false)">
                     <Template>
-                        <RadzenIcon Icon="bookmark" />
+                        <RadzenIcon Icon="@getItemIcon(context.Value as string)" />
                         @(context.Value as string)
                     </Template>
                 </RadzenTreeLevel>
@@ -66,9 +67,18 @@
     private string SelectedClass;
     private string SelectedDataset;
 
+    private Func<string, string> getItemIcon;
+
     private AddDialog AddDialog;
     private RenameDialog RenameDialog;
     private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
+    {
+        getItemIcon = (string item) => item == SelectedClass
+                                       ? "bookmark"
+                                       : "bookmark_border";
+    }
 
     public void OnDatasetChange(string dataset)
     {

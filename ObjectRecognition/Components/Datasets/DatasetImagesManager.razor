@@ -9,8 +9,11 @@
     @if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
     {
         <div class="btn-panel">
-            <button class="btn btn-primary oi oi-plus"
-                    @onclick=@(() => new object())>
+            <button class="btn btn-success oi oi-plus"
+                    @onclick=@(() => UploadDialog.Show())>
+            </button>
+            <button class="btn btn-primary oi @(IsTrainImageSelected ? "oi-chevron-right" : "oi-chevron-left")"
+                    @onclick=@(() => ChangeSelectedImageType())>
             </button>
             <button class="btn btn-danger oi oi-trash"
                     @onclick=@(() => DeleteDialog.Show())
@@ -65,11 +68,12 @@
     }
 </div>
 
-@*Add image upload dialog*@
+<ImageUploadDialog @ref="UploadDialog"
+                   OnConfirm="UploadImage" />
 
 <DeleteDialog @ref="DeleteDialog"
               ItemType=@ItemType.DatasetImage
-              ItemName=@(GetImageName(SelectedImage))
+              ItemName=@(GetSelectedItemName())
               OnConfirm="DeleteImage" />
 
 @code {
@@ -80,16 +84,15 @@
                                           ? Constants.TrainImagesFolderName
                                           : Constants.TestImagesFolderName;
 
-    private List<string> TrainImages;
-    private List<string> TestImages;
+    private List<string> TrainImages = new();
+    private List<string> TestImages = new();
 
-    private bool IsTrainImageSelected;
+    private bool IsTrainImageSelected = true;
     private string SelectedImage;
     private string SelectedClass;
     private string SelectedDataset;
 
-    private AddDialog AddDialog;
-    private RenameDialog RenameDialog;
+    private ImageUploadDialog UploadDialog;
     private DeleteDialog DeleteDialog;
 
     protected override void OnInitialized()
@@ -115,13 +118,13 @@
 
     private void LoadDatasetImages()
     {
-        TrainImages = new List<string>();
-        TestImages = new List<string>();
+        TrainImages.Clear();
+        TestImages.Clear();
 
         if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
         {
-            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, Constants.TrainImagesFolderName);
-            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, Constants.TestImagesFolderName);
+            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImageFolder, SelectedDataset, SelectedClass, Constants.TrainImagesFolderName);
+            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImageFolder, SelectedDataset, SelectedClass, Constants.TestImagesFolderName);
 
             try
             {
@@ -156,21 +159,89 @@
     {
         var fileInfo = new System.IO.FileInfo(file);
 
-        var fileExtention = fileInfo.Extension.Substring(1).ToUpper();
+        var fileExtention = fileInfo.Extension.ToLower();
 
         return Constants.ImageFileExtentions.Contains(fileExtention);
     }
 
-    private string GetImageName(string image)
+    private string GetSelectedItemName()
     {
-        return image != null
+        return SelectedImage != null
                ? new System.IO.FileInfo(SelectedClass).Name
                : string.Empty;
     }
 
-    private void UploadImage(bool isTrain = true)
+    private string GetSelectedImageName()
     {
+        return SelectedImage != null
+               ? new System.IO.FileInfo(SelectedImage).Name
+               : string.Empty;
+    }
 
+    private async void UploadImage(IEnumerable<IBrowserFile> files)
+    {
+        var trainOrTestFolder = IsTrainImageSelected
+                                ? Constants.TrainImagesFolderName
+                                : Constants.TestImagesFolderName;
+
+        var trainOrTestImages = IsTrainImageSelected
+                                ? TrainImages
+                                : TestImages;
+
+        foreach (var file in files)
+        {
+            var filePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, trainOrTestFolder, file.Name);
+
+            try
+            {
+                using var fileWriteStream = new FileStream(filePath, FileMode.Create);
+
+                await file.OpenReadStream(Constants.ImageFileMaxSize).CopyToAsync(fileWriteStream);
+
+                trainOrTestImages.Add(filePath);
+                
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            }
+        }
+    }
+
+    private void ChangeSelectedImageType()
+    {
+        var trainOrTestFolder = !IsTrainImageSelected
+                                ? Constants.TrainImagesFolderName
+                                : Constants.TestImagesFolderName;
+
+        var imageName = GetSelectedImageName();
+
+        var newImagePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, trainOrTestFolder, imageName);
+
+        try
+        {
+            File.Move(SelectedImage, newImagePath);
+
+            if (IsTrainImageSelected)
+            {
+                TrainImages.Remove(SelectedImage);
+                TestImages.Add(SelectedImage);
+            }
+            else
+            {
+                TestImages.Remove(SelectedImage);
+                TrainImages.Add(SelectedImage);
+            }
+
+            SelectImage(newImagePath, !IsTrainImageSelected);
+
+            LoadDatasetImages();
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+        }
     }
 
     private void DeleteImage()

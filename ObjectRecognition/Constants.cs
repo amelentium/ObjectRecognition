@@ -9,7 +9,9 @@
         public const string TrainImagesFolderName = "train";
         public const string TestImagesFolderName = "test";
 
-        public static string[] ImageFileExtentions = new[] { "JPEG", "JPG", "PNG" };
+        public static string[] ImageFileExtentions = new[] { ".jpeg", ".jpg", ".png" };
+        public const long ImageFileMaxSize = 3 * 1024 * 1024;
+
 
         public static void SetConstants(this IWebHostEnvironment env)
         {

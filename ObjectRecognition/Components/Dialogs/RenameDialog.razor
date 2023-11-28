@@ -7,11 +7,13 @@
     <dialog open="@IsOpen">
         <h3>Rename item</h3>
         <p>Enter new @(ItemTypeName) name</p>
-        <input type="text" @bind-value=ItemName />
-        <div>
+        <p>
+            <input type="text" @bind-value=ItemName />
+        </p>
+        <p>
             <button @onclick="Rename">Rename</button>
             <button @onclick="Close">Cancel</button>
-        </div>
+        </p>
     </dialog>
 </div>
 
