@@ -7,5 +7,7 @@
         DatasetClass = 2,
         DatasetImageFolder = 3,
         DatasetImage = 4,
+        UserImage = 5,
+        UserImageResult = 6,
     }
 }

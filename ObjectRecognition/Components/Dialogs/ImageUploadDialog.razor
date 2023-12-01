@@ -1,4 +1,5 @@
 ﻿@using ObjectRecognition.Extentions
+
 @inherits Dialog<IEnumerable<IBrowserFile>>;
 
 <div class="dialog" active="@IsOpen.ToString()">
@@ -8,9 +9,7 @@
         <p>
             <InputFile OnChange="@InputFileChange"
                        multiple
-                       accept="@(string.Join(',', Constants.ImageFileExtentions))">
-                Select
-            </InputFile>
+                       accept="@(string.Join(',', Constants.ImageFileExtentions))" />
         </p>
         @if (Files != null)
         {
@@ -19,7 +18,7 @@
                 @foreach (var file in Files)
                 {
                     <text>
-                        @file.Name (@((file.Size / (float)Constants.ImageFileMaxSize).ToString("F")) MB)
+                        @file.Name (@((file.Size / (float)Constants.DatasetImageFileMaxSize).ToString("F")) MB)
                     </text>
                     <br />
                 }
@@ -47,7 +46,7 @@
             var fileExtention = fileInfo.Extension.ToLower();
 
             var hasValidType = Constants.ImageFileExtentions.Contains(fileExtention);
-            var hasValidSize = file.Size <= Constants.ImageFileMaxSize;
+            var hasValidSize = file.Size <= Constants.DatasetImageFileMaxSize;
 
             if (hasValidType && hasValidSize)
             {

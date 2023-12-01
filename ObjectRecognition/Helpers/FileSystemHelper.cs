@@ -13,6 +13,9 @@ namespace ObjectRecognition.Helpers
                     ItemType.DatasetImageFolder => Constants.DatasetsPath + "\\{0}\\{1}\\{2}",
                     ItemType.DatasetImage => Constants.DatasetsPath + "\\{0}\\{1}\\{2}\\{3}",
 
+                    ItemType.UserImage => Constants.UserImagesPath + "\\{0}",
+                    ItemType.UserImageResult => Constants.ResultsPath + "\\{0}",
+
                     _ => string.Empty,
             };
 

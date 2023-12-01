@@ -25,8 +25,8 @@ builder.Services.AddHttpClient("telegram_bot_client")
 					return new TelegramBotClient(options, httpClient);
 				});
 
+builder.Services.AddSingleton<IScriptService, ScriptService>();
 builder.Services.AddScoped<ITelegramBotService, TelegramBotService>();
-builder.Services.AddScoped<IFileManagerService, FileManagerService>();
 
 var app = builder.Build();
 

@@ -30,7 +30,7 @@
                     <RadzenDataList WrapItems="true" AllowPaging="true"
                                     Data="@TrainImages" TItem="string">
                         <Template Context="image">
-                            <RadzenImage Path="@NormalizeImagePath(image)"
+                            <RadzenImage Path="@RadzenHelper.NormalizeImagePath(image)"
                                          Style="@getImageStyle(image)"
                                          Click="@((args) => SelectImage(image, true))" />
                         </Template>
@@ -51,7 +51,7 @@
                     <RadzenDataList WrapItems="true" AllowPaging="true"
                                     Data="@TestImages" TItem="string">
                         <Template Context="image">
-                            <RadzenImage Path="@NormalizeImagePath(image)"
+                            <RadzenImage Path="@RadzenHelper.NormalizeImagePath(image)"
                                          Style="@getImageStyle(image)"
                                          Click="@((args) => SelectImage(image, false))" />
                         </Template>
@@ -153,8 +153,6 @@
         IsTrainImageSelected = isTrainImage;
     }
 
-    private string NormalizeImagePath(string image) => image.Replace(Constants.WebRootPath, string.Empty);
-
     private bool IsValidImageFile(string file)
     {
         var fileInfo = new System.IO.FileInfo(file);
@@ -196,7 +194,7 @@
             {
                 using var fileWriteStream = new FileStream(filePath, FileMode.Create);
 
-                await file.OpenReadStream(Constants.ImageFileMaxSize).CopyToAsync(fileWriteStream);
+                await file.OpenReadStream(Constants.DatasetImageFileMaxSize).CopyToAsync(fileWriteStream);
 
                 trainOrTestImages.Add(filePath);
                 
