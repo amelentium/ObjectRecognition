@@ -1,38 +1,25 @@
-﻿using System.Diagnostics;
-using ObjectRecognition.Services.Interfaces;
+﻿using ObjectRecognition.Services.Interfaces;
+using System.Diagnostics;
 
 namespace ObjectRecognition.Services
 {
     public class ScriptService : IScriptService
     {
-        public Task<Dictionary<string, string>> ExecuteImagePrediction(string modelPath, string imagePath, string resultPath)
+        public async void ExecuteImagePrediction(string modelPath, string imagePath, Action<string> onResultRecived)
         {
-            return Task.Run(async () =>
+            var processInfo = new ProcessStartInfo
             {
-                var cmdProcess = Process.Start(new ProcessStartInfo
-                {
-                    WorkingDirectory = Constants.SctiptsPath,
-                    FileName = "image_predict.py",
-                    Arguments = $"{modelPath} {imagePath} {resultPath}",
-                    UseShellExecute = true,
-                });
+                FileName = "C:\\Programs\\Python\\python.exe",
+                Arguments = $"{Constants.SctiptsPath}\\image_predict.py {modelPath} {imagePath}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+            };
 
-                await cmdProcess.WaitForExitAsync();
+            using Process process = Process.Start(processInfo);
+            using StreamReader reader = process.StandardOutput;
 
-                var result = new Dictionary<string, string>();
-                var lines = await File.ReadAllLinesAsync(resultPath);
-
-                foreach (var line in lines)
-                {
-                    var parts = line.Split('\t');
-                    var @class = parts[0];
-                    var prob = parts[1];
-
-                    result.TryAdd(@class, prob);
-                }
-
-                return result;
-            });
+            string result = await reader.ReadToEndAsync();
+            onResultRecived.Invoke(result);
         }
     }
 }

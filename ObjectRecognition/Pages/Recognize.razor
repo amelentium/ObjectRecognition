@@ -1,4 +1,5 @@
-﻿@page "/recognize"
+﻿@page "/"
+@page "/recognize"
 
 @using ObjectRecognition.Helpers;
 
@@ -25,21 +26,26 @@
 </p>
 <p>
     <button class="btn btn-primary"
-            @onclick="MakePrediction">
+            @onclick="MakePrediction"
+            disabled=@(this.File == null || InProgress)>
         Recognize
     </button>
 </p>
-@if (PredictionResults != null)
+@if (InProgress)
 {
     <p>
-        Results <br />
-        <RadzenImage Path="@RadzenHelper.NormalizeImagePath(Image)" />
+        Recognition in progress ...
+    </p>
+}
+@if (PredictionResults != null && PredictionResults.Count > 0)
+{
+    <p>
+        Results <br>
+        <RadzenImage Path="@RadzenHelper.NormalizeImagePath(Image)" 
+                     Style="max-height: 480px; max-width:720px"/> <br>
         @foreach (var result in PredictionResults)
         {
-            <text>
-                @(result.Key) - @(result.Value)%
-            </text>
-            <br />
+            @result <br>
         }
     </p>
 }
@@ -49,12 +55,14 @@
     private List<string> Models;
     private IBrowserFile File;
     private string Image;
-    private Dictionary<string, string> PredictionResults;
+    private bool InProgress;
+    private List<string> PredictionResults;
 
     protected override void OnInitialized()
     {
         Models = Directory.EnumerateFiles(Constants.ModelsPath).ToList();
         SelectedModel = Models.FirstOrDefault();
+        PredictionResults = new();
     }
 
     private void InputFileChange(InputFileChangeEventArgs e)
@@ -62,8 +70,18 @@
         File = e.File;
     }
 
+    private string GetFileNameWithoutExtension(string filePath)
+    {
+        var fileInfo = new System.IO.FileInfo(filePath);
+
+        return fileInfo.Name.Replace(fileInfo.Extension, string.Empty);
+    }
+
     private async void MakePrediction()
     {
+        InProgress = true;
+        PredictionResults.Clear();
+
         var fileInfo = new System.IO.FileInfo(File.Name);
         var fileExtention = fileInfo.Extension.ToLower();
 
@@ -71,8 +89,6 @@
         if (hasValidType)
         {
             Image = FileSystemHelper.GetItemPath(Enums.ItemType.UserImage, File.Name);
-            var resultFileName = fileInfo.Name.Replace(fileInfo.Extension, ".txt");
-            var resultFile = FileSystemHelper.GetItemPath(Enums.ItemType.UserImageResult, resultFileName);
 
             try
             {
@@ -80,22 +96,23 @@
 
                 await File.OpenReadStream(Constants.UserImageFileMaxSize).CopyToAsync(fileWriteStream);
 
-                PredictionResults = await Script.ExecuteImagePrediction(SelectedModel, Image, resultFile);
-
-                //Remove used files
-
-                StateHasChanged();
+                Script.ExecuteImagePrediction(SelectedModel, Image, ResultRecived);
             }
             catch (Exception ex)
             {
                 await JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
-            }            
+
+                InProgress = false;
+            }
         }
     }
-    private string GetFileNameWithoutExtension(string filePath)
-    {
-        var fileInfo = new System.IO.FileInfo(filePath);
 
-        return fileInfo.Name.Replace(fileInfo.Extension, string.Empty);
+    private void ResultRecived(string classResult)
+    {
+        PredictionResults.AddRange(classResult.Split("\n\r"));
+
+        InProgress = false;
+
+        StateHasChanged();
     }
 }

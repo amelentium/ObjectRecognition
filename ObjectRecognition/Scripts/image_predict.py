@@ -1,17 +1,15 @@
 import sys
 import model as core
+import warnings
+
+warnings.filterwarnings("ignore")
 
 modelPath = sys.argv[1]
 imagePath = sys.argv[2]
-resultPath = sys.argv[3]
 
 result = zip(*core.make_prediction(modelPath, imagePath))
 
-f = open(resultPath, 'w')
-
 for res in result:
-  f.write(str(res[0]) + '\t' + str(res[1]) + '\n')
-
-f.close()
+  print(str(res[0]) + '\t' + "{:5.2f}".format(res[1] * 100) + '%\n')
 
 exit()

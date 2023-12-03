@@ -2,6 +2,6 @@
 {
     public interface IScriptService
     {
-        Task<Dictionary<string, string>> ExecuteImagePrediction(string modelPath, string imagePath, string resultPath);
+        void ExecuteImagePrediction(string modelPath, string imagePath, Action<string> onResultRecived);
     }
 }

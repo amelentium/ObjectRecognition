@@ -13,7 +13,8 @@
                     @onclick=@(() => UploadDialog.Show())>
             </button>
             <button class="btn btn-primary oi @(IsTrainImageSelected ? "oi-chevron-right" : "oi-chevron-left")"
-                    @onclick=@(() => ChangeSelectedImageType())>
+                    @onclick=@(() => ChangeSelectedImageType())
+                    disabled=@String.IsNullOrEmpty(SelectedImage)>
             </button>
             <button class="btn btn-danger oi oi-trash"
                     @onclick=@(() => DeleteDialog.Show())

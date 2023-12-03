@@ -1,39 +1,27 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">ObjectRecognition</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <text class="navbar-brand" href="">
+            Object Recognition
+        </text>
     </div>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<div>
     <nav class="flex-column">
-        <div class="nav-item px-3">
+        <div class="nav-item px-4">
             <NavLink class="nav-link" href="recognize" Match="NavLinkMatch.All">
                 <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Recognize
             </NavLink>
         </div>
-        <div class="nav-item px-3">
+        <div class="nav-item px-4">
             <NavLink class="nav-link" href="datasets">
                 <span class="oi oi-book" aria-hidden="true"></span> Manage datasets
             </NavLink>
         </div>
-        <div class="nav-item px-3">
+        <div class="nav-item px-4">
             <NavLink class="nav-link" href="train">
                 <span class="oi oi-aperture" aria-hidden="true"></span> Train model
             </NavLink>
         </div>
     </nav>
 </div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
