@@ -9,5 +9,6 @@
         DatasetImage = 4,
         UserImage = 5,
         UserImageResult = 6,
+        Model = 7,
     }
 }

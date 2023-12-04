@@ -94,6 +94,8 @@
         {
             var classesPath = FileSystemHelper.GetItemPath(ItemType.Dataset, SelectedDataset);
 
+            classesPath = Path.Combine(classesPath, Constants.TrainImagesFolderName);
+
             Classes = Directory.EnumerateDirectories(classesPath)
                                             .Select(x => new DirectoryInfo(x).Name)
                                             .ToList();
@@ -119,37 +121,47 @@
 
     private void AddClass(string className)
     {
-        var classPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, className);
+        var classTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, className);
+        var classTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, className);
 
         try
         {
-            var classDirectory = Directory.CreateDirectory(classPath);
+            var classDirectory = Directory.CreateDirectory(classTrainPath);
+            classDirectory = Directory.CreateDirectory(classTestPath);
+
             Classes.Add(classDirectory.Name);
             Classes.Sort();
+
             ChangeSelectedClass(classDirectory.Name);
         }
         catch (Exception ex)
         {
-            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
         }
     }
 
     private void RenameClass(string classNewName)
     {
-        var classCurrentPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, SelectedClass);
-        var classNewPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, classNewName);
+        var classCurrentTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+        var classCurrentTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
+
+        var classNewTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, classNewName);
+        var classNewTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, classNewName);
 
         try
         {
-            Directory.Move(classCurrentPath, classNewPath);
+            Directory.Move(classCurrentTrainPath, classNewTrainPath);
+            Directory.Move(classCurrentTestPath, classNewTestPath);
+
             Classes.Remove(SelectedClass);
             Classes.Add(classNewName);
             Classes.Sort();
+
             ChangeSelectedClass(classNewName);
         }
         catch (Exception ex)
         {
-            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
         }
     }
 
@@ -157,14 +169,19 @@
     {
         try
         {
-            var classPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, SelectedClass);
-            Directory.Delete(classPath, true);
+            var classTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+            var classTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
+
+            Directory.Delete(classTrainPath, true);
+            Directory.Delete(classTestPath, true);
+
             Classes.Remove(SelectedClass);
+
             ChangeSelectedClass(null);
         }
         catch (Exception ex)
         {
-            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
         }
     }
 }

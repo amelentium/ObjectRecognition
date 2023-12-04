@@ -1,19 +1,16 @@
+from re import VERBOSE
+from tabnanny import verbose
 import torch
-from torch import nn
+from torch import nn, optim
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
-import cv2
-
 from torchvision import transforms, models, datasets
 
-import numpy as np
-
+import os
 import copy
+import time
+import cv2
 from PIL import Image
-
-# Variables for directories paths
-DATASET_DIR_PATH = 'images/tiny-imagenet'
-TRAIN_IMG_DIR_PATH = 'images/tiny-imagenet/train'
-VAL_IMG_DIR_PATH = 'images/tiny-imagenet/val'
 
 # CPU or GPU select
 use_cuda = torch.cuda.is_available()
@@ -22,7 +19,7 @@ device = 'cuda' if use_cuda else 'cpu'
 if use_cuda:
   torch.backends.cuda.matmul.allow_tf32 = True
   torch.backends.cudnn.benchmark = True
-
+  os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 # Default image augmentation and nornalization parameters
 mean = [0.485, 0.456, 0.406]
@@ -67,10 +64,13 @@ def dataloader_create(data, transform):
 
     return dataloader
 
-def init_dataloaders():
+def init_dataloaders(train_images_path, val_images_path):
+    if train_images_path is None or val_images_path is None:
+        return None
+
     dataloaders = {
-        'train': dataloader_create(data=TRAIN_IMG_DIR_PATH, transform=data_transforms['train']),
-        'val': dataloader_create(data=VAL_IMG_DIR_PATH, transform=data_transforms['val'])
+        'train': dataloader_create(data=train_images_path, transform=data_transforms['train']),
+        'val': dataloader_create(data=val_images_path, transform=data_transforms['val'])
     }
 
     return dataloaders
@@ -80,7 +80,7 @@ def model_create(dataloaders=None):
     model = models.resnext50_32x4d(weights=models.ResNeXt50_32X4D_Weights.DEFAULT)
 
     feature_in_count = model.fc.in_features
-    class_count = 0 if dataloaders == None else len(dataloaders['train'].dataset.classes)
+    class_count = len(dataloaders['train'].dataset.classes) if dataloaders != None else 0
 
     model.fc = nn.Linear(feature_in_count, class_count)
 
@@ -93,7 +93,10 @@ def model_change_class_count(model, class_count):
 
     return model    
 
-def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count=18):
+def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count=18, verbose=False):
+    if verbose:
+        print(f'Training started, total number of epochs - {epoch_count} ...')
+    
     best_wts = copy.deepcopy(model.state_dict())
     best_acc = .0
 
@@ -102,8 +105,9 @@ def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count
         'val': len(dataloaders['val'].dataset)
     }
 
-    for _ in range(epoch_count):
- 
+    for epoch in range(epoch_count):
+        start = time.time()
+        
         for phase in ['train', 'val']:
             model.train() if phase == 'train' else model.eval()                
 
@@ -137,8 +141,20 @@ def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count
             if phase == 'val' and acc > best_acc:
                 best_acc = acc
                 best_wts = copy.deepcopy(model.state_dict())
+        
+        end = time.time()
+
+        if verbose:
+        
+            minutes = (end - start) // 60
+            seconds = (end - start) % 60
+            print('Epoch {0} fineshed in {1}{2}.'.format(epoch + 1, f'{minutes} min ' if minutes > 0 else '', f'{seconds:4.2f} sec'))
 
     model.load_state_dict(best_wts)
+    
+    if verbose:
+        print(f'Training is complete with accuracy - {(best_acc * 100):5.2f}%')
+        
     return model
 
 def create_checkpoint(model, dataloaders, criterion, optimizer, scheduler, path='./model.tar'):
@@ -150,9 +166,6 @@ def create_checkpoint(model, dataloaders, criterion, optimizer, scheduler, path=
     checkpoint = {
                   'model_state_dict': model.state_dict(),
                   'label_class_dict': label_class_dict,
-                  'criterion': criterion.state_dict(),
-                  'optimizer': optimizer.state_dict(),
-                  'scheduler': scheduler.state_dict()
                   }
 
     torch.save(checkpoint, path)
@@ -166,11 +179,8 @@ def load_checkpoint(path='./model.tar'):
 
     model.load_state_dict(checkpoint['model_state_dict'])
     label_class_dict = checkpoint['label_class_dict']
-    criterion = checkpoint['criterion']
-    optimizer = checkpoint['optimizer']
-    scheduler = checkpoint['scheduler']
     
-    return model, label_class_dict, criterion, optimizer, scheduler
+    return model, label_class_dict
 
 def image_transforming(image):
     image = data_transforms['val'](image)
@@ -186,7 +196,7 @@ def image_denoising(path):
     return image
 
 def image_process(path):
-    image = Image.open(path)
+    image = Image.open(path).convert('RGB')
     image = image_transforming(image)
     image_dn = image_denoising(path)
 
@@ -208,7 +218,7 @@ def predict(model, image, topk=5):
     return top_ps, top_class
 
 def make_prediction(model_path, image_path):
-    model, label_class_dict, _, _, _ = load_checkpoint(model_path)
+    model, label_class_dict = load_checkpoint(model_path)
     model = model.to(device)
 
     image, image_dn = image_process(image_path)
@@ -232,3 +242,21 @@ def make_prediction(model_path, image_path):
     classes = [label_class_dict[_class_].title() for _class_ in classes]
 
     return classes, probs
+
+def train(model_path, train_images_path, val_images_path):
+    model = criterion = optimizer = scheduler = None
+    dataloaders = init_dataloaders(train_images_path, val_images_path)
+    
+    if (os.path.exists(model_path)):
+        model, _ = load_checkpoint(model_path)
+    else:
+        model = model_create(dataloaders)
+    
+    model = model.to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=6, gamma=0.1)
+
+    model = model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count=18, verbose=True)
+
+    create_checkpoint(model, dataloaders, criterion, optimizer, scheduler, path=model_path)

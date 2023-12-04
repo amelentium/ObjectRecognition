@@ -14,7 +14,7 @@
         {
             @foreach (var model in Models)
             {
-                <option value="@model">@GetFileNameWithoutExtension(model)</option>
+                <option value="@model">@Path.GetFileNameWithoutExtension(model)</option>
             }
         }
     </select>
@@ -70,13 +70,6 @@
         File = e.File;
     }
 
-    private string GetFileNameWithoutExtension(string filePath)
-    {
-        var fileInfo = new System.IO.FileInfo(filePath);
-
-        return fileInfo.Name.Replace(fileInfo.Extension, string.Empty);
-    }
-
     private async void MakePrediction()
     {
         InProgress = true;
@@ -100,7 +93,7 @@
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+                await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
 
                 InProgress = false;
             }

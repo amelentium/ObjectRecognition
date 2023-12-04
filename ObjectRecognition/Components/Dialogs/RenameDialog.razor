@@ -11,8 +11,13 @@
             <input type="text" @bind-value=ItemName />
         </p>
         <p>
-            <button @onclick="Rename">Rename</button>
-            <button @onclick="Close">Cancel</button>
+            <button @onclick="Rename"
+                    disabled="@string.IsNullOrWhiteSpace(ItemName)">
+                Rename
+            </button>
+            <button @onclick="Close">
+                Cancel
+            </button>
         </p>
     </dialog>
 </div>

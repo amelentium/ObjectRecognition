@@ -11,8 +11,13 @@
             <input type="text" @bind-value=ItemName/>
         </p>
         <p>
-            <button @onclick="AddItem">Add</button>
-            <button @onclick="Close">Cancel</button>
+            <button @onclick="AddItem"
+                    disabled="@string.IsNullOrWhiteSpace(ItemName)">
+                Add
+            </button>
+            <button @onclick="Close">
+                Cancel
+            </button>
         </p>
     </dialog>
 </div>

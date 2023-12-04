@@ -124,8 +124,8 @@
 
         if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
         {
-            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImageFolder, SelectedDataset, SelectedClass, Constants.TrainImagesFolderName);
-            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetImageFolder, SelectedDataset, SelectedClass, Constants.TestImagesFolderName);
+            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
 
             try
             {
@@ -165,7 +165,7 @@
 
     private string GetSelectedItemName()
     {
-        return SelectedImage != null
+        return !string.IsNullOrEmpty(SelectedImage) && !string.IsNullOrEmpty(SelectedClass)
                ? new System.IO.FileInfo(SelectedClass).Name
                : string.Empty;
     }
@@ -189,7 +189,7 @@
 
         foreach (var file in files)
         {
-            var filePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, trainOrTestFolder, file.Name);
+            var filePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, trainOrTestFolder, SelectedClass, file.Name);
 
             try
             {
@@ -203,7 +203,7 @@
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+                await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
             }
         }
     }
@@ -216,7 +216,7 @@
 
         var imageName = GetSelectedImageName();
 
-        var newImagePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, SelectedClass, trainOrTestFolder, imageName);
+        var newImagePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, trainOrTestFolder, SelectedClass, imageName);
 
         try
         {
@@ -239,7 +239,7 @@
         }
         catch (Exception ex)
         {
-            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
         }
     }
 
@@ -262,7 +262,7 @@
         }
         catch (Exception ex)
         {
-            JS.InvokeVoidAsync("console.log", "Something went wrong: " + ex);
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
         }
     }
 }

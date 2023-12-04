@@ -1,0 +1,179 @@
+﻿@page "/train"
+
+@using ObjectRecognition.Enums
+@using ObjectRecognition.Helpers;
+
+@inject IScriptService Script;
+@inject IJSRuntime JS;
+
+<h3>Train</h3>
+<p>Select existing model or enter new model name</p>
+<p>
+    <span>
+        <input @bind="SelectedModel" list="models"
+               style="position: relative; top: 2px;">
+        <button class="btn btn-warning oi oi-pencil"
+                @onclick=@(() => RenameDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedModel)>
+        </button>
+        <button class="btn btn-danger oi oi-trash"
+                @onclick=@(() => DeleteDialog.Show())
+                disabled=@String.IsNullOrEmpty(SelectedModel)>
+        </button>
+    </span>
+    @if (Models != null && Models.Any())
+    {
+        <datalist id="models">
+            @foreach (var model in Models)
+            {
+                <option value="@model" />
+            }
+        </datalist>
+    }
+</p>
+<p>Select dataset for training</p>
+<p>
+    <select @bind="SelectedDataset">
+        @if (Datasets != null && Datasets.Any())
+        {
+            @foreach (var set in Datasets)
+            {
+                <option value="@set">@(new DirectoryInfo(set).Name)</option>
+            }
+        }
+    </select>
+</p>
+<p>
+    <button class="btn btn-primary"
+            @onclick="StartTraining"
+            disabled=@isTrainingStartButtonDisabled>
+        Start training
+    </button>
+</p>
+@if (TrainingLog != null && TrainingLog.Count > 0)
+{
+    <p>
+        Training progress: <br>
+        @foreach (var result in TrainingLog)
+        {
+            @result <br>
+        }
+    </p>
+}
+
+<RenameDialog @ref="RenameDialog"
+              ItemType=@ItemType.Model
+              OnConfirm="RenameModel" />
+<DeleteDialog @ref="DeleteDialog"
+              ItemType=@ItemType.Model
+              ItemName=@SelectedModel
+              OnConfirm="DeleteModel" />
+
+@code {
+    private string SelectedModel;
+    private List<string> Models;
+
+    private string SelectedDataset;
+    private List<string> Datasets;
+
+    private bool isTrainingInProgress;
+    private int TotalTrainingSteps = 20;
+    private int CurrentTrainingSteps = 20;
+    private List<string> TrainingLog;
+
+    private bool isTrainingStartButtonDisabled => isTrainingInProgress
+                                                  || string.IsNullOrEmpty(SelectedDataset)
+                                                  || string.IsNullOrEmpty(SelectedModel);
+
+    private RenameDialog RenameDialog;
+    private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
+    {
+        Models = Directory.EnumerateFiles(Constants.ModelsPath)
+                            .Select(x => Path.GetFileNameWithoutExtension(x))
+                            .ToList();
+        Datasets = Directory.EnumerateDirectories(Constants.DatasetsPath)
+                            .ToList();
+        SelectedDataset = Datasets.FirstOrDefault();
+        TrainingLog = new();
+    }
+
+    private async void StartTraining()
+    {
+        var modelPath = FileSystemHelper.GetItemPath(Enums.ItemType.Model, SelectedModel);
+        var trainImagesPath = Path.Combine(SelectedDataset, Constants.TrainImagesFolderName);
+        var testImagesPath = Path.Combine(SelectedDataset, Constants.TestImagesFolderName);
+
+        try
+        {
+            isTrainingInProgress = true;
+
+            Script.ExecuteModelTraining(modelPath, trainImagesPath, testImagesPath, LogTrainStep);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+
+            isTrainingInProgress = false;
+        }
+    }
+
+    private void LogTrainStep(string step)
+    {
+        TrainingLog.Add(step);
+
+        if (++CurrentTrainingSteps == TotalTrainingSteps)
+        {
+            isTrainingInProgress = false;
+            CurrentTrainingSteps = 0;
+        }
+
+        StateHasChanged();
+    }
+
+    private void RenameModel(string modelNewName)
+    {
+        if (Models.Contains(modelNewName))
+        {
+            JS.InvokeVoidAsync("alert", "Rename failed: a model with same name already exist!");
+
+            return;
+        }
+
+        var fullModelCurrentName = SelectedModel + ".tar";
+        var fullModelNewName = modelNewName + ".tar";
+
+        var modelCurrentPath = FileSystemHelper.GetItemPath(ItemType.Model, fullModelCurrentName);
+        var modelNewPath = FileSystemHelper.GetItemPath(ItemType.Model, fullModelNewName);
+
+        try
+        {
+            Directory.Move(modelCurrentPath, modelNewPath);
+            Models.Remove(SelectedModel);
+            SelectedModel = modelNewName;
+            Models.Add(modelNewName);
+            Models.Sort();
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+
+    private void DeleteModel()
+    {
+        try
+        {
+            var fullModelName = SelectedModel + ".tar";
+            var modelPath = FileSystemHelper.GetItemPath(ItemType.Model, fullModelName);
+            File.Delete(modelPath);
+            Models.Remove(SelectedModel);
+            SelectedModel = null;
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+}

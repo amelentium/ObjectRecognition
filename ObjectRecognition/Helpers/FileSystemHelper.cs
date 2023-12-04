@@ -9,12 +9,12 @@ namespace ObjectRecognition.Helpers
             var pathTemplate = itemType switch
             {
                     ItemType.Dataset => Constants.DatasetsPath + "\\{0}",
-                    ItemType.DatasetClass => Constants.DatasetsPath + "\\{0}\\{1}",
-                    ItemType.DatasetImageFolder => Constants.DatasetsPath + "\\{0}\\{1}\\{2}",
+                    ItemType.DatasetClass => Constants.DatasetsPath + "\\{0}\\{1}\\{2}",
                     ItemType.DatasetImage => Constants.DatasetsPath + "\\{0}\\{1}\\{2}\\{3}",
 
                     ItemType.UserImage => Constants.UserImagesPath + "\\{0}",
-                    ItemType.UserImageResult => Constants.ResultsPath + "\\{0}",
+
+                    ItemType.Model => Constants.ModelsPath + "\\{0}",
 
                     _ => string.Empty,
             };
