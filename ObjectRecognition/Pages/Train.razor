@@ -50,11 +50,11 @@
         Start training
     </button>
 </p>
-@if (TrainingLog != null && TrainingLog.Count > 0)
+@if (TrainingLogs != null && TrainingLogs.Count > 0)
 {
     <p>
         Training progress: <br>
-        @foreach (var result in TrainingLog)
+        @foreach (var result in TrainingLogs)
         {
             @result <br>
         }
@@ -79,7 +79,8 @@
     private bool isTrainingInProgress;
     private int TotalTrainingSteps = 20;
     private int CurrentTrainingSteps = 20;
-    private List<string> TrainingLog;
+    private List<string> TrainingLogs;
+    private EventCallback<string> LogTrainStepCallback;
 
     private bool isTrainingStartButtonDisabled => isTrainingInProgress
                                                   || string.IsNullOrEmpty(SelectedDataset)
@@ -96,12 +97,19 @@
         Datasets = Directory.EnumerateDirectories(Constants.DatasetsPath)
                             .ToList();
         SelectedDataset = Datasets.FirstOrDefault();
-        TrainingLog = new();
+
+        TrainingLogs = new();
+        LogTrainStepCallback = new EventCallback<string>(null, (MulticastDelegate)Delegate.Combine(new Delegate[]
+        {
+            new Action<string> ((step) => LogTrainStep(step)),
+        }));
     }
 
     private async void StartTraining()
     {
-        var modelPath = FileSystemHelper.GetItemPath(Enums.ItemType.Model, SelectedModel);
+        var fullModelName = SelectedModel + ".tar";
+
+        var modelPath = FileSystemHelper.GetItemPath(Enums.ItemType.Model, fullModelName);
         var trainImagesPath = Path.Combine(SelectedDataset, Constants.TrainImagesFolderName);
         var testImagesPath = Path.Combine(SelectedDataset, Constants.TestImagesFolderName);
 
@@ -109,7 +117,7 @@
         {
             isTrainingInProgress = true;
 
-            Script.ExecuteModelTraining(modelPath, trainImagesPath, testImagesPath, LogTrainStep);
+            Script.ExecuteModelTraining(modelPath, trainImagesPath, testImagesPath, LogTrainStepCallback);
         }
         catch (Exception ex)
         {
@@ -119,9 +127,9 @@
         }
     }
 
-    private void LogTrainStep(string step)
+    private async void LogTrainStep(string step)
     {
-        TrainingLog.Add(step);
+        TrainingLogs.Add(step);
 
         if (++CurrentTrainingSteps == TotalTrainingSteps)
         {
@@ -129,7 +137,7 @@
             CurrentTrainingSteps = 0;
         }
 
-        StateHasChanged();
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void RenameModel(string modelNewName)

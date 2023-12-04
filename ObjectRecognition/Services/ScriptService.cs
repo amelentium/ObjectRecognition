@@ -1,49 +1,45 @@
-﻿using ObjectRecognition.Services.Interfaces;
+﻿using Microsoft.AspNetCore.Components;
+using ObjectRecognition.Services.Interfaces;
 using System.Diagnostics;
 
 namespace ObjectRecognition.Services
 {
     public class ScriptService : IScriptService
     {
-        public async void ExecuteImagePrediction(string modelPath, string imagePath, Action<string> onResultRecived)
+        public async void ExecuteImagePrediction(string modelPath, string imagePath, EventCallback<string> onResultRecived)
         {
-            var processInfo = new ProcessStartInfo
-            {
-                FileName = "C:\\Programs\\Python\\python.exe",
-                Arguments = $"{Constants.SctiptsPath}\\image_predict.py {modelPath} {imagePath}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-            };
+            var process = new Process();
+            var processInfo = process.StartInfo;
 
-            using Process process = Process.Start(processInfo);
-            using StreamReader reader = process.StandardOutput;
+            processInfo.FileName = "C:\\Programs\\Python\\python.exe";
+            processInfo.Arguments = $"{Constants.SctiptsPath}\\image_predict.py {modelPath} {imagePath}";
+            processInfo.UseShellExecute = false;
+            processInfo.RedirectStandardOutput = true;
 
-            string result = await reader.ReadToEndAsync();
-            onResultRecived.Invoke(result);
+            process.Start();
+            var result = await process.StandardOutput.ReadToEndAsync();
+            await onResultRecived.InvokeAsync(result);
+            await process.WaitForExitAsync();
         }
 
-        public async void ExecuteModelTraining(string modelPath, string trainImagesPath, string testImagesPath, Action<string> onTrainStepCompleted)
+        public async void ExecuteModelTraining(string modelPath, string trainImagesPath, string testImagesPath, EventCallback<string> onTrainStepCompleted)
         {
-            var processInfo = new ProcessStartInfo
+            var process = new Process();
+            var processInfo = process.StartInfo;
+
+            processInfo.FileName = "C:\\Programs\\Python\\python.exe";
+            processInfo.Arguments = $"-u  {Constants.SctiptsPath}\\model_train.py {modelPath} {trainImagesPath} {testImagesPath}";
+            processInfo.UseShellExecute = false;
+            processInfo.RedirectStandardOutput = true;
+
+            process.OutputDataReceived += (sender, args) =>
             {
-                FileName = "C:\\Programs\\Python\\python.exe",
-                Arguments = $"{Constants.SctiptsPath}\\model_train.py {modelPath} {trainImagesPath} {testImagesPath}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
+                onTrainStepCompleted.InvokeAsync(args.Data);
             };
 
-            using Process process = Process.Start(processInfo);
-            using StreamReader reader = process.StandardOutput;
-
-            while (!process.HasExited)
-            {
-                string result = await reader.ReadLineAsync();
-
-                if (!string.IsNullOrEmpty(result))
-                    onTrainStepCompleted.Invoke(result);
-                else
-                    await Task.Delay(TimeSpan.FromSeconds(3));
-            }
+            process.Start();
+            process.BeginOutputReadLine();
+            await process.WaitForExitAsync();
         }
     }
 }

@@ -57,12 +57,18 @@
     private string Image;
     private bool InProgress;
     private List<string> PredictionResults;
+    private EventCallback<string> ResultRecivedCallback;
+
 
     protected override void OnInitialized()
     {
         Models = Directory.EnumerateFiles(Constants.ModelsPath).ToList();
         SelectedModel = Models.FirstOrDefault();
         PredictionResults = new();
+        ResultRecivedCallback = new EventCallback<string>(null, (MulticastDelegate)Delegate.Combine(new Delegate[]
+        {
+            new Action<string> ((result) => ResultRecived(result)),
+        }));
     }
 
     private void InputFileChange(InputFileChangeEventArgs e)
@@ -89,7 +95,7 @@
 
                 await File.OpenReadStream(Constants.UserImageFileMaxSize).CopyToAsync(fileWriteStream);
 
-                Script.ExecuteImagePrediction(SelectedModel, Image, ResultRecived);
+                Script.ExecuteImagePrediction(SelectedModel, Image, ResultRecivedCallback);
             }
             catch (Exception ex)
             {

@@ -8,16 +8,13 @@ namespace ObjectRecognition.Services
 {
 	public class TelegramBotService : ITelegramBotService
 	{
-		private readonly ILogger<TelegramBotService> _logger;
 		private readonly ITelegramBotClient _telegramBot;
 		private readonly IWebHostEnvironment _env;
 
 		public TelegramBotService(
-			ILogger<TelegramBotService> logger,
 			ITelegramBotClient telegramBot,
 			IWebHostEnvironment env)
 		{
-			_logger = logger;
 			_telegramBot = telegramBot;
 			_env = env;
 		}
