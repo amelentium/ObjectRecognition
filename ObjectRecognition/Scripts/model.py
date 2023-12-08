@@ -1,5 +1,3 @@
-from re import VERBOSE
-from tabnanny import verbose
 import torch
 from torch import nn, optim
 from torch.optim import lr_scheduler
@@ -78,20 +76,16 @@ def init_dataloaders(train_images_path, val_images_path):
 # Core functions declare
 def model_create(dataloaders=None):
     model = models.resnext50_32x4d(weights=models.ResNeXt50_32X4D_Weights.DEFAULT)
-
-    feature_in_count = model.fc.in_features
     class_count = len(dataloaders['train'].dataset.classes) if dataloaders != None else 0
 
-    model.fc = nn.Linear(feature_in_count, class_count)
-
-    return model
+    return model_change_class_count(model, class_count)
 
 def model_change_class_count(model, class_count):
     feature_in_count = model.fc.in_features
 
     model.fc = nn.Linear(feature_in_count, class_count)
 
-    return model    
+    return model
 
 def model_train(model, dataloaders, criterion, optimizer, scheduler, epoch_count=18, verbose=False):
     if verbose:
@@ -213,10 +207,11 @@ def predict(model, image, topk=5):
         predictions = model(image)
         sm = torch.nn.Softmax(dim=1)
         probabilities = sm(predictions) 
-        top_ps, top_class = probabilities.topk(topk, dim=1)
+        top_ps, top_classes = probabilities.topk(topk, dim=1)
     
-    return top_ps, top_class
+    return top_ps, top_classes
 
+# Functions for external use
 def make_prediction(model_path, image_path):
     model, label_class_dict = load_checkpoint(model_path)
     model = model.to(device)

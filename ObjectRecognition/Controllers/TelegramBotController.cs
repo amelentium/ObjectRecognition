@@ -18,11 +18,11 @@ namespace ObjectRecognition.Controllers
 		}
 
 		[HttpPost("message/update")]
-		public IActionResult TelegramWebhook([FromBody] Update update)
+		public async Task<IActionResult> TelegramWebhook([FromBody] Update update)
         {
 			if (!string.IsNullOrEmpty(update.Message?.Photo?.Last()?.FileId))
 			{
-				_ = _telegramBotService.MakePredictAsync(update);
+				await _telegramBotService.MakePredictAsync(update);
 			}
 
 			return Ok();

@@ -6,6 +6,8 @@
 @inject IScriptService Script;
 @inject IJSRuntime JS;
 
+<PageTitle>Train model</PageTitle>
+
 <h3>Train</h3>
 <p>Select existing model or enter new model name</p>
 <p>
@@ -14,11 +16,11 @@
                style="position: relative; top: 2px;">
         <button class="btn btn-warning oi oi-pencil"
                 @onclick=@(() => RenameDialog.Show())
-                disabled=@String.IsNullOrEmpty(SelectedModel)>
+                disabled=@isEditButtonDisabled>
         </button>
         <button class="btn btn-danger oi oi-trash"
                 @onclick=@(() => DeleteDialog.Show())
-                disabled=@String.IsNullOrEmpty(SelectedModel)>
+                disabled=@isDeleteButtonDisabled>
         </button>
     </span>
     @if (Models != null && Models.Any())
@@ -82,6 +84,12 @@
     private List<string> TrainingLogs;
     private EventCallback<string> LogTrainStepCallback;
 
+    private bool isEditButtonDisabled => String.IsNullOrEmpty(SelectedModel)
+                                         || !Models.Contains(SelectedModel);
+
+    private bool isDeleteButtonDisabled => String.IsNullOrEmpty(SelectedModel)
+                                           || !Models.Contains(SelectedModel);
+
     private bool isTrainingStartButtonDisabled => isTrainingInProgress
                                                   || string.IsNullOrEmpty(SelectedDataset)
                                                   || string.IsNullOrEmpty(SelectedModel);
@@ -117,7 +125,7 @@
         {
             isTrainingInProgress = true;
 
-            Script.ExecuteModelTraining(modelPath, trainImagesPath, testImagesPath, LogTrainStepCallback);
+            await Script.ExecuteModelTrainingAsync(modelPath, trainImagesPath, testImagesPath, LogTrainStepCallback);
         }
         catch (Exception ex)
         {
@@ -129,15 +137,18 @@
 
     private async void LogTrainStep(string step)
     {
-        TrainingLogs.Add(step);
-
-        if (++CurrentTrainingSteps == TotalTrainingSteps)
+        if (!string.IsNullOrEmpty(step))
         {
-            isTrainingInProgress = false;
-            CurrentTrainingSteps = 0;
-        }
+            TrainingLogs.Add(step);
 
-        await InvokeAsync(() => StateHasChanged());
+            if (++CurrentTrainingSteps == TotalTrainingSteps)
+            {
+                isTrainingInProgress = false;
+                CurrentTrainingSteps = 0;
+            }
+
+            await InvokeAsync(() => StateHasChanged());
+        }
     }
 
     private void RenameModel(string modelNewName)

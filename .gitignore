@@ -352,6 +352,14 @@ MigrationBackup/
 # Image folder
 [Ii]mages/
 
+# Model folder
+[Mm]odels/
+
 # Pytorch model
 *.tar
-/ObjectRecognition/appsettings.Development.json
+
+# Development app settings
+appsettings.Development.json
+
+# VS Code
+.vscode/

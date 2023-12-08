@@ -6,7 +6,9 @@
 @inject IScriptService Script;
 @inject IJSRuntime JS;
 
-<h3>Predict</h3>
+<PageTitle>Recognize image</PageTitle>
+
+<h3>Recognize</h3>
 <p>Select recognition model</p>
 <p>
     <select @bind="SelectedModel">
@@ -95,7 +97,7 @@
 
                 await File.OpenReadStream(Constants.UserImageFileMaxSize).CopyToAsync(fileWriteStream);
 
-                Script.ExecuteImagePrediction(SelectedModel, Image, ResultRecivedCallback);
+                await Script.ExecuteImagePredictionAsync(SelectedModel, Image, ResultRecivedCallback);
             }
             catch (Exception ex)
             {

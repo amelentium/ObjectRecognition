@@ -75,14 +75,13 @@
     private void TreeSelectionChange(TreeEventArgs args)
     {
         ChangeSelectedDataset(args.Value as string);
-
-        DatasetChange.InvokeAsync(SelectedDataset);
     }
 
     private void ChangeSelectedDataset(string dataset)
     {
         SelectedTreeItem = dataset;
-        SelectedDataset = dataset;        
+        SelectedDataset = dataset;
+        DatasetChange.InvokeAsync(SelectedDataset);
     }
 
     private void AddDataset(string datasetName)

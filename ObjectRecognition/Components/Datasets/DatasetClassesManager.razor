@@ -84,7 +84,7 @@
     {
         SelectedDataset = dataset;
         LoadDatasetClasses(dataset);
-        SelectedClass = null;
+        ChangeSelectedClass(null);
         StateHasChanged();
     }
 
@@ -109,14 +109,13 @@
     private void TreeSelectionChange(TreeEventArgs args)
     {
         ChangeSelectedClass(args.Value as string);
-
-        ClassChange.InvokeAsync(SelectedClass);
     }
 
     private void ChangeSelectedClass(string @class)
     {
         SelectedTreeItem = @class;
         SelectedClass = @class;
+        ClassChange.InvokeAsync(SelectedClass);
     }
 
     private void AddClass(string className)

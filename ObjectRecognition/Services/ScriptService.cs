@@ -6,7 +6,7 @@ namespace ObjectRecognition.Services
 {
     public class ScriptService : IScriptService
     {
-        public async void ExecuteImagePrediction(string modelPath, string imagePath, EventCallback<string> onResultRecived)
+        public async Task ExecuteImagePredictionAsync(string modelPath, string imagePath, EventCallback<string> onResultRecived)
         {
             var process = new Process();
             var processInfo = process.StartInfo;
@@ -22,7 +22,7 @@ namespace ObjectRecognition.Services
             await process.WaitForExitAsync();
         }
 
-        public async void ExecuteModelTraining(string modelPath, string trainImagesPath, string testImagesPath, EventCallback<string> onTrainStepCompleted)
+        public async Task ExecuteModelTrainingAsync(string modelPath, string trainImagesPath, string testImagesPath, EventCallback<string> onTrainStepCompleted)
         {
             var process = new Process();
             var processInfo = process.StartInfo;
@@ -32,9 +32,9 @@ namespace ObjectRecognition.Services
             processInfo.UseShellExecute = false;
             processInfo.RedirectStandardOutput = true;
 
-            process.OutputDataReceived += (sender, args) =>
+            process.OutputDataReceived += async (sender, args) =>
             {
-                onTrainStepCompleted.InvokeAsync(args.Data);
+                await onTrainStepCompleted.InvokeAsync(args.Data);
             };
 
             process.Start();

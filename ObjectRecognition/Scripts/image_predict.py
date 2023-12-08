@@ -10,6 +10,6 @@ image_path = sys.argv[2]
 result = zip(*core.make_prediction(model_path, image_path))
 
 for res in result:
-  print(str(res[0]) + '\t' + "{:5.2f}".format(res[1] * 100) + '%\n')
+  print(f"{(res[1] * 100):5.2f}%\t{res[0]}\n")
 
 exit()
