@@ -1,0 +1,62 @@
+﻿@using ObjectRecognition.Extentions
+
+@inherits Dialog<IEnumerable<IBrowserFile>>;
+
+<div class="dialog" active="@IsOpen.ToString()">
+    <dialog open="@IsOpen">
+        <h3>Upload images</h3>
+        <p>Select images to upload</p>
+        <p>
+            <InputFile OnChange="@InputFileChange"
+                       multiple
+                       accept="@(string.Join(',', Constants.ImageFileExtentions))" />
+        </p>
+        @if (Files != null)
+        {
+            <p>
+                Files to upload (@Files.Count): <br />
+                @foreach (var file in Files)
+                {
+                    <text>
+                        @file.Name (@((file.Size / (float)Constants.DatasetImageFileMaxSize).ToString("F")) MB)
+                    </text>
+                    <br />
+                }
+            </p>
+        }
+        <p>
+            <button @onclick="UploadImages">Upload</button>
+            <button @onclick="Close">Cancel</button>
+        </p>
+    </dialog>
+</div>
+
+@code {
+    private List<IBrowserFile> Files = new();
+
+    private void InputFileChange(InputFileChangeEventArgs e)
+    {
+        Files.Clear();
+
+        var files = e.GetMultipleFiles(e.FileCount);
+
+        foreach (var file in files)
+        {
+            var fileInfo = new System.IO.FileInfo(file.Name);
+            var fileExtention = fileInfo.Extension.ToLower();
+
+            var hasValidType = Constants.ImageFileExtentions.Contains(fileExtention);
+            var hasValidSize = file.Size <= Constants.DatasetImageFileMaxSize;
+
+            if (hasValidType && hasValidSize)
+            {
+                Files.Add(file);
+            }
+        }
+    }
+
+    private void UploadImages()
+    {
+        Confirm(Files);
+    }
+}

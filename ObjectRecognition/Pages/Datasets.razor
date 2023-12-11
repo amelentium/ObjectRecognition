@@ -1,0 +1,43 @@
+﻿@page "/datasets"
+
+@using System.IO;
+@using System.Web;
+@using System.Collections;
+
+<PageTitle>Datasets</PageTitle>
+
+<h3>Dataset Manager</h3>
+<div class="row">
+    <div class="col-md-2" style="margin-bottom: 16px">
+        <DatasetsManager DatasetChange="@DatasetChangeCallback" />
+    </div>
+    <div class="col-md-2" style="margin-bottom: 16px">
+        <DatasetClassesManager @ref="ClassesManager"
+                               ClassChange="@ClassChangeCallback" />
+    </div>
+    <div class="col-md-8" style="margin-bottom: 16px">
+        <DatasetImagesManager @ref="ImagesManager" />
+    </div>
+</div>
+
+@code {
+    private EventCallback<string> DatasetChangeCallback;
+    private EventCallback<string> ClassChangeCallback;
+
+    private DatasetClassesManager ClassesManager;
+    private DatasetImagesManager ImagesManager;
+
+    protected override void OnInitialized()
+    {
+        DatasetChangeCallback = new EventCallback<string>(null, (MulticastDelegate)Delegate.Combine(new Delegate[]
+        {
+            new Action<string> ((dataset) => ClassesManager.OnDatasetChange(dataset)),
+            new Action<string> ((dataset) => ImagesManager.OnDatasetChange(dataset)),
+        }));
+
+        ClassChangeCallback = new EventCallback<string>(null, (MulticastDelegate)Delegate.Combine(new Delegate[]
+        {
+            new Action<string> ((dataset) => ImagesManager.OnClassChange(dataset)),
+        }));
+    }
+}

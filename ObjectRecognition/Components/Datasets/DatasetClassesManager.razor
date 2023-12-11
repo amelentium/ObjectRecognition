@@ -1,0 +1,186 @@
+﻿@using ObjectRecognition.Enums;
+@using ObjectRecognition.Extentions
+@using ObjectRecognition.Helpers;
+@using System.Text.Json;
+
+@inject IJSRuntime JS
+
+<div class="centered">
+    <h3>Classes</h3>
+
+    @if (Classes != null)
+    {
+        <div class="btn-panel">
+            <button class="btn btn-success oi oi-plus"
+                    @onclick=@(() => AddDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedDataset)>
+            </button>
+            <button class="btn btn-warning oi oi-pencil"
+                    @onclick=@(() => RenameDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedClass)>
+            </button>
+            <button class="btn btn-danger oi oi-trash"
+                    @onclick=@(() => DeleteDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedClass)>
+            </button>
+        </div>
+        @if (Classes?.Count != 0)
+        {
+            <RadzenTree @bind-Value=SelectedTreeItem
+                        Data="@Classes"
+                        Change="@TreeSelectionChange"
+                        Style="width: 100%; height: 250px">
+                <RadzenTreeLevel HasChildren="@((value) => false)">
+                    <Template>
+                        <RadzenIcon Icon="@getItemIcon(context.Value as string)" />
+                        @(context.Value as string)
+                    </Template>
+                </RadzenTreeLevel>
+            </RadzenTree>
+        }
+        else
+        {
+            <div>
+                Empty
+            </div>
+        }
+    }
+</div>
+
+<AddDialog @ref="AddDialog"
+           ItemType=@ItemType.DatasetClass
+           OnConfirm="AddClass" />
+<RenameDialog @ref="RenameDialog"
+              ItemType=@ItemType.DatasetClass
+              OnConfirm="RenameClass" />
+<DeleteDialog @ref="DeleteDialog"
+              ItemType=@ItemType.DatasetClass
+              ItemName=@SelectedClass
+              OnConfirm="DeleteClass" />
+
+@code {
+    [Parameter]
+    public EventCallback<string> ClassChange { get; set; }
+
+    private List<string> Classes;
+    private object SelectedTreeItem;
+    private string SelectedClass;
+    private string SelectedDataset;
+
+    private Func<string, string> getItemIcon;
+
+    private AddDialog AddDialog;
+    private RenameDialog RenameDialog;
+    private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
+    {
+        getItemIcon = (string item) => item == SelectedClass
+                                       ? "bookmark"
+                                       : "bookmark_border";
+    }
+
+    public void OnDatasetChange(string dataset)
+    {
+        SelectedDataset = dataset;
+        LoadDatasetClasses(dataset);
+        ChangeSelectedClass(null);
+        StateHasChanged();
+    }
+
+    private void LoadDatasetClasses(string dataset)
+    {
+        if (!string.IsNullOrEmpty(dataset))
+        {
+            var classesPath = FileSystemHelper.GetItemPath(ItemType.Dataset, SelectedDataset);
+
+            classesPath = Path.Combine(classesPath, Constants.TrainImagesFolderName);
+
+            Classes = Directory.EnumerateDirectories(classesPath)
+                                            .Select(x => new DirectoryInfo(x).Name)
+                                            .ToList();
+        } 
+        else
+        {
+            Classes = null;
+        }
+    }
+
+    private void TreeSelectionChange(TreeEventArgs args)
+    {
+        ChangeSelectedClass(args.Value as string);
+    }
+
+    private void ChangeSelectedClass(string @class)
+    {
+        SelectedTreeItem = @class;
+        SelectedClass = @class;
+        ClassChange.InvokeAsync(SelectedClass);
+    }
+
+    private void AddClass(string className)
+    {
+        var classTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, className);
+        var classTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, className);
+
+        try
+        {
+            var classDirectory = Directory.CreateDirectory(classTrainPath);
+            classDirectory = Directory.CreateDirectory(classTestPath);
+
+            Classes.Add(classDirectory.Name);
+            Classes.Sort();
+
+            ChangeSelectedClass(classDirectory.Name);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+
+    private void RenameClass(string classNewName)
+    {
+        var classCurrentTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+        var classCurrentTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
+
+        var classNewTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, classNewName);
+        var classNewTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, classNewName);
+
+        try
+        {
+            Directory.Move(classCurrentTrainPath, classNewTrainPath);
+            Directory.Move(classCurrentTestPath, classNewTestPath);
+
+            Classes.Remove(SelectedClass);
+            Classes.Add(classNewName);
+            Classes.Sort();
+
+            ChangeSelectedClass(classNewName);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+
+    private void DeleteClass()
+    {
+        try
+        {
+            var classTrainPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+            var classTestPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
+
+            Directory.Delete(classTrainPath, true);
+            Directory.Delete(classTestPath, true);
+
+            Classes.Remove(SelectedClass);
+
+            ChangeSelectedClass(null);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+}

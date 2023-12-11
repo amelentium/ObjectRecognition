@@ -1,0 +1,119 @@
+﻿@page "/"
+@page "/recognize"
+
+@using ObjectRecognition.Helpers;
+
+@inject IScriptService Script;
+@inject IJSRuntime JS;
+
+<PageTitle>Recognize image</PageTitle>
+
+<h3>Recognize</h3>
+<p>Select recognition model</p>
+<p>
+    <select @bind="SelectedModel">
+        @if (Models != null && Models.Any())
+        {
+            @foreach (var model in Models)
+            {
+                <option value="@model">@Path.GetFileNameWithoutExtension(model)</option>
+            }
+        }
+    </select>
+</p>
+<p>Select images to recognize</p>
+<p>
+    <InputFile OnChange="@InputFileChange"
+               accept="@(string.Join(',', Constants.ImageFileExtentions))" />
+</p>
+<p>
+    <button class="btn btn-primary"
+            @onclick="MakePrediction"
+            disabled=@(this.File == null || InProgress)>
+        Recognize
+    </button>
+</p>
+@if (InProgress)
+{
+    <p>
+        Recognition in progress ...
+    </p>
+}
+@if (PredictionResults != null && PredictionResults.Count > 0)
+{
+    <p>
+        Results <br>
+        <RadzenImage Path="@RadzenHelper.NormalizeImagePath(Image)" 
+                     Style="max-height: 480px; max-width:720px"/> <br>
+        @foreach (var result in PredictionResults)
+        {
+            @result <br>
+        }
+    </p>
+}
+
+@code {
+    private string SelectedModel;
+    private List<string> Models;
+    private IBrowserFile File;
+    private string Image;
+    private bool InProgress;
+    private List<string> PredictionResults;
+    private EventCallback<string> ResultRecivedCallback;
+
+
+    protected override void OnInitialized()
+    {
+        Models = Directory.EnumerateFiles(Constants.ModelsPath).ToList();
+        SelectedModel = Models.FirstOrDefault();
+        PredictionResults = new();
+        ResultRecivedCallback = new EventCallback<string>(null, (MulticastDelegate)Delegate.Combine(new Delegate[]
+        {
+            new Action<string> ((result) => ResultRecived(result)),
+        }));
+    }
+
+    private void InputFileChange(InputFileChangeEventArgs e)
+    {
+        File = e.File;
+    }
+
+    private async void MakePrediction()
+    {
+        InProgress = true;
+        PredictionResults.Clear();
+
+        var fileInfo = new System.IO.FileInfo(File.Name);
+        var fileExtention = fileInfo.Extension.ToLower();
+
+        var hasValidType = Constants.ImageFileExtentions.Contains(fileExtention);
+        if (hasValidType)
+        {
+            Image = FileSystemHelper.GetItemPath(Enums.ItemType.UserImage, File.Name);
+
+            try
+            {
+                using var fileWriteStream = new FileStream(Image, FileMode.Create);
+
+                await File.OpenReadStream(Constants.UserImageFileMaxSize).CopyToAsync(fileWriteStream);
+
+                await Script.ExecuteImagePredictionAsync(SelectedModel, Image, ResultRecivedCallback);
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+
+                InProgress = false;
+            }
+        }
+    }
+
+    private void ResultRecived(string classResult)
+    {
+        PredictionResults.AddRange(classResult.Split("\n\r"));
+
+        InProgress = false;
+
+        StateHasChanged();
+    }
+}

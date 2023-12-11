@@ -1,0 +1,36 @@
+﻿@using ObjectRecognition.Enums;
+@using ObjectRecognition.Extentions
+
+@inherits Dialog<string>;
+
+<div class="dialog" active="@IsOpen.ToString()">
+    <dialog open="@IsOpen">
+        <h3>Add item</h3>
+        <p>Enter @(ItemTypeName) name</p>
+        <p>
+            <input type="text" @bind-value=ItemName/>
+        </p>
+        <p>
+            <button @onclick="AddItem"
+                    disabled="@string.IsNullOrWhiteSpace(ItemName)">
+                Add
+            </button>
+            <button @onclick="Close">
+                Cancel
+            </button>
+        </p>
+    </dialog>
+</div>
+
+@code {
+    [Parameter]
+    public ItemType ItemType { get; set; }
+
+    private string ItemTypeName => ItemType.ToString().SplitCamelCase();
+    private string ItemName;
+
+    private void AddItem()
+    {
+        Confirm(ItemName);
+    }
+}

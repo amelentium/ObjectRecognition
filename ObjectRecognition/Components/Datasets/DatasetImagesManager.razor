@@ -1,0 +1,268 @@
+﻿@using ObjectRecognition.Enums
+@using ObjectRecognition.Helpers
+
+@inject IJSRuntime JS
+
+<div class="centered">
+    <h3>Images</h3>
+
+    @if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
+    {
+        <div class="btn-panel">
+            <button class="btn btn-success oi oi-plus"
+                    @onclick=@(() => UploadDialog.Show())>
+            </button>
+            <button class="btn btn-primary oi @(IsTrainImageSelected ? "oi-chevron-right" : "oi-chevron-left")"
+                    @onclick=@(() => ChangeSelectedImageType())
+                    disabled=@String.IsNullOrEmpty(SelectedImage)>
+            </button>
+            <button class="btn btn-danger oi oi-trash"
+                    @onclick=@(() => DeleteDialog.Show())
+                    disabled=@String.IsNullOrEmpty(SelectedImage)>
+            </button>
+        </div>
+
+        <div class="images">
+            <div class="col col-md-6">
+                <h3>Train</h3>
+
+                @if (TrainImages.Count != 0)
+                {
+                    <RadzenDataList WrapItems="true" AllowPaging="true"
+                                    Data="@TrainImages" TItem="string">
+                        <Template Context="image">
+                            <RadzenImage Path="@RadzenHelper.NormalizeImagePath(image)"
+                                         Style="@getImageStyle(image)"
+                                         Click="@((args) => SelectImage(image, true))" />
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <div>
+                        Empty
+                    </div>
+                }
+            </div>
+            <div class="col col-md-6">
+                <h3>Test</h3>
+
+                @if (TestImages.Count != 0)
+                {
+                    <RadzenDataList WrapItems="true" AllowPaging="true"
+                                    Data="@TestImages" TItem="string">
+                        <Template Context="image">
+                            <RadzenImage Path="@RadzenHelper.NormalizeImagePath(image)"
+                                         Style="@getImageStyle(image)"
+                                         Click="@((args) => SelectImage(image, false))" />
+                        </Template>
+                    </RadzenDataList>
+                }
+                else
+                {
+                    <div>
+                        Empty
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<ImageUploadDialog @ref="UploadDialog"
+                   OnConfirm="UploadImage" />
+
+<DeleteDialog @ref="DeleteDialog"
+              ItemType=@ItemType.DatasetImage
+              ItemName=@(GetSelectedItemName())
+              OnConfirm="DeleteImage" />
+
+@code {
+    private const string imageStyle = "width: 160px; height: 90px; padding: 8px; background: {0}";
+    private Func<string, string> getImageBackground;
+    private Func<string, string> getImageStyle;
+    private string imageTypeFolderName => IsTrainImageSelected
+                                          ? Constants.TrainImagesFolderName
+                                          : Constants.TestImagesFolderName;
+
+    private List<string> TrainImages = new();
+    private List<string> TestImages = new();
+
+    private bool IsTrainImageSelected = true;
+    private string SelectedImage;
+    private string SelectedClass;
+    private string SelectedDataset;
+
+    private ImageUploadDialog UploadDialog;
+    private DeleteDialog DeleteDialog;
+
+    protected override void OnInitialized()
+    {
+        getImageBackground = (string image) => image == SelectedImage ? "darkgrey" : "none";
+        getImageStyle = (string image) => string.Format(imageStyle, getImageBackground(image));
+    }
+
+    public void OnDatasetChange(string dataset)
+    {
+        SelectedDataset = dataset;
+        SelectedClass = null;
+        LoadDatasetImages();
+        StateHasChanged();
+    }
+
+    public void OnClassChange(string @class)
+    {
+        SelectedClass = @class;
+        LoadDatasetImages();
+        StateHasChanged();
+    }
+
+    private void LoadDatasetImages()
+    {
+        TrainImages.Clear();
+        TestImages.Clear();
+
+        if (!string.IsNullOrEmpty(SelectedDataset) && !string.IsNullOrEmpty(SelectedClass))
+        {
+            var trainImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TrainImagesFolderName, SelectedClass);
+            var testImagesPath = FileSystemHelper.GetItemPath(ItemType.DatasetClass, SelectedDataset, Constants.TestImagesFolderName, SelectedClass);
+
+            try
+            {
+                TrainImages.AddRange(Directory.GetFiles(trainImagesPath)
+                                    .Where(x => IsValidImageFile(x))
+                                    );
+
+                TestImages.AddRange(Directory.GetFiles(testImagesPath)
+                                    .Where(x => IsValidImageFile(x))
+                                    );
+            }
+            catch
+            {
+                Directory.CreateDirectory(trainImagesPath);
+                Directory.CreateDirectory(testImagesPath);
+            }
+        }
+    }
+
+    private void SelectImage(string image, bool isTrainImage)
+    {
+        SelectedImage = SelectedImage == image
+                        ? null
+                        : image;
+
+        IsTrainImageSelected = isTrainImage;
+    }
+
+    private bool IsValidImageFile(string file)
+    {
+        var fileInfo = new System.IO.FileInfo(file);
+
+        var fileExtention = fileInfo.Extension.ToLower();
+
+        return Constants.ImageFileExtentions.Contains(fileExtention);
+    }
+
+    private string GetSelectedItemName()
+    {
+        return !string.IsNullOrEmpty(SelectedImage) && !string.IsNullOrEmpty(SelectedClass)
+               ? new System.IO.FileInfo(SelectedClass).Name
+               : string.Empty;
+    }
+
+    private string GetSelectedImageName()
+    {
+        return SelectedImage != null
+               ? new System.IO.FileInfo(SelectedImage).Name
+               : string.Empty;
+    }
+
+    private async void UploadImage(IEnumerable<IBrowserFile> files)
+    {
+        var trainOrTestFolder = IsTrainImageSelected
+                                ? Constants.TrainImagesFolderName
+                                : Constants.TestImagesFolderName;
+
+        var trainOrTestImages = IsTrainImageSelected
+                                ? TrainImages
+                                : TestImages;
+
+        foreach (var file in files)
+        {
+            var filePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, trainOrTestFolder, SelectedClass, file.Name);
+
+            try
+            {
+                using var fileWriteStream = new FileStream(filePath, FileMode.Create);
+
+                await file.OpenReadStream(Constants.DatasetImageFileMaxSize).CopyToAsync(fileWriteStream);
+
+                trainOrTestImages.Add(filePath);
+                
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+            }
+        }
+    }
+
+    private void ChangeSelectedImageType()
+    {
+        var trainOrTestFolder = !IsTrainImageSelected
+                                ? Constants.TrainImagesFolderName
+                                : Constants.TestImagesFolderName;
+
+        var imageName = GetSelectedImageName();
+
+        var newImagePath = FileSystemHelper.GetItemPath(ItemType.DatasetImage, SelectedDataset, trainOrTestFolder, SelectedClass, imageName);
+
+        try
+        {
+            File.Move(SelectedImage, newImagePath);
+
+            if (IsTrainImageSelected)
+            {
+                TrainImages.Remove(SelectedImage);
+                TestImages.Add(SelectedImage);
+            }
+            else
+            {
+                TestImages.Remove(SelectedImage);
+                TrainImages.Add(SelectedImage);
+            }
+
+            SelectImage(newImagePath, !IsTrainImageSelected);
+
+            LoadDatasetImages();
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+
+    private void DeleteImage()
+    {
+        try
+        {
+            File.Delete(SelectedImage);
+
+            if (IsTrainImageSelected)
+            {
+                TrainImages.Remove(SelectedImage);
+            }
+            else
+            {
+                TestImages.Remove(SelectedImage);
+            }
+
+            SelectImage(null, IsTrainImageSelected);
+        }
+        catch (Exception ex)
+        {
+            JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
+        }
+    }
+}
