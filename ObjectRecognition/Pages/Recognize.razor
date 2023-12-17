@@ -43,7 +43,7 @@
 {
     <p>
         Results <br>
-        <RadzenImage Path="@RadzenHelper.NormalizeImagePath(Image)" 
+        <RadzenImage Path="@ImageInMemory"
                      Style="max-height: 480px; max-width:720px"/> <br>
         @foreach (var result in PredictionResults)
         {
@@ -57,6 +57,7 @@
     private List<string> Models;
     private IBrowserFile File;
     private string Image;
+    private string ImageInMemory;
     private bool InProgress;
     private List<string> PredictionResults;
     private EventCallback<string> ResultRecivedCallback;
@@ -93,9 +94,18 @@
 
             try
             {
-                using var fileWriteStream = new FileStream(Image, FileMode.Create);
+                using (var fileWriteStream = new FileStream(Image, FileMode.Create)) {
+                    await File.OpenReadStream(File.Size).CopyToAsync(fileWriteStream);
 
-                await File.OpenReadStream(Constants.UserImageFileMaxSize).CopyToAsync(fileWriteStream);
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await File.OpenReadStream(File.Size).CopyToAsync(memoryStream);
+
+                        var fileExt = fileExtention.Substring(1);
+
+                        ImageInMemory = $"data:image/{fileExt};base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+                    }
+                }
 
                 await Script.ExecuteImagePredictionAsync(SelectedModel, Image, ResultRecivedCallback);
             }
@@ -104,6 +114,10 @@
                 await JS.InvokeVoidAsync("alert", "Something went wrong: " + ex);
 
                 InProgress = false;
+            }
+            finally
+            {
+                System.IO.File.Delete(Image);
             }
         }
     }
